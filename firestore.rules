@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny all undefined paths
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'pmcp091@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Colección de Administradores
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && (request.auth.uid == adminId || isBootstrappedAdmin());
+      allow list: if isBootstrappedAdmin();
+      allow write: if isBootstrappedAdmin();
+    }
+
+    // Colección de Sesiones de Formación
+    match /sessions/{sessionId} {
+      // Lectura permitida para visualización de cronograma y quioscos institucionales
+      allow read: if true;
+
+      // Creación, actualización y eliminación de sesiones
+      allow create: if isValidId(sessionId) &&
+        incoming().institution is string && incoming().institution.size() <= 200 &&
+        incoming().modality is string && incoming().modality.size() <= 50;
+
+      allow update: if isValidId(sessionId) &&
+        incoming().institution is string && incoming().institution.size() <= 200 &&
+        incoming().modality is string && incoming().modality.size() <= 50;
+
+      allow delete: if isValidId(sessionId);
+    }
+
+    // Colección de Solicitudes de Reprogramación
+    match /changeRequests/{requestId} {
+      // Lectura permitida para monitoreo de estado en enlaces institucionales y coordinación
+      allow read: if true;
+
+      // Las instituciones pueden radicar solicitudes con estado 'Pendiente'
+      allow create: if isValidId(requestId) &&
+        incoming().institution is string && incoming().institution.size() <= 200 &&
+        incoming().proposedDate is string && incoming().proposedDate.size() <= 50 &&
+        incoming().reason is string && incoming().reason.size() <= 1000 &&
+        incoming().status == 'Pendiente';
+
+      // Actualización de estado por coordinación (Aprobada / Rechazada)
+      allow update: if isValidId(requestId) &&
+        incoming().institution is string &&
+        incoming().status in ['Pendiente', 'Aprobada', 'Rechazada'];
+
+      allow delete: if isValidId(requestId);
+    }
+
+    // Colección de Instituciones Educativas
+    match /institutions/{institutionId} {
+      allow read: if true;
+      allow write: if isValidId(institutionId);
+    }
+
+    // Colección de prueba para validar conectividad con Firestore
+    match /test/{docId} {
+      allow read, write: if true;
+    }
+  }
+}

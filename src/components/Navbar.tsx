@@ -16,7 +16,8 @@ import {
   LogOut,
   Sun,
   Moon,
-  Inbox
+  Inbox,
+  Cloud
 } from 'lucide-react';
 import { BrandingSettings, InstitutionProfile } from '../types/schedule';
 import { usePWAInstall } from '../hooks/usePWAInstall';
@@ -46,6 +47,7 @@ interface NavbarProps {
   isInstitutionalKiosk?: boolean;
   isDarkMode?: boolean;
   onToggleDarkMode?: () => void;
+  firebaseSyncStatus?: 'synced' | 'connecting' | 'offline';
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -70,7 +72,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   institutionProfile,
   isInstitutionalKiosk = false,
   isDarkMode = false,
-  onToggleDarkMode
+  onToggleDarkMode,
+  firebaseSyncStatus = 'synced'
 }) => {
   const { isInstallable, install } = usePWAInstall();
 
@@ -198,6 +201,20 @@ export const Navbar: React.FC<NavbarProps> = ({
                     Modo Offline (Sin señal)
                   </span>
                 )}
+                {/* Firebase Cloud Sync Badge */}
+                <span 
+                  className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${
+                    firebaseSyncStatus === 'synced'
+                      ? 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/60'
+                      : firebaseSyncStatus === 'connecting'
+                      ? 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 animate-pulse'
+                      : 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                  }`}
+                  title="Sincronización en la nube con Google Firebase Firestore"
+                >
+                  <Cloud className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span>{firebaseSyncStatus === 'synced' ? 'Firebase Conectado' : firebaseSyncStatus === 'connecting' ? 'Conectando...' : 'Firebase Local'}</span>
+                </span>
               </div>
               <h1 className="text-base sm:text-lg font-black tracking-tight text-slate-900 dark:text-white truncate leading-tight mt-0.5">
                 {branding.programTitle || 'PROGRAMA VOCACIÓN QUE TRANSFORMA'}

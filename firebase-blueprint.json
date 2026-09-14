@@ -1,0 +1,87 @@
+{
+  "entities": {
+    "TrainingSession": {
+      "title": "TrainingSession",
+      "description": "Sesión de formación programada para una institución educativa",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "institution": { "type": "string", "maxLength": 200 },
+        "municipality": { "type": "string", "maxLength": 100 },
+        "trainingType": { "type": "string", "maxLength": 200 },
+        "topic": { "type": "string", "maxLength": 250 },
+        "targetAudience": { "type": "string", "maxLength": 100 },
+        "gradeOrCycle": { "type": "string", "maxLength": 100 },
+        "modality": { "type": "string", "maxLength": 50 },
+        "specificDate": { "type": "string", "maxLength": 50 },
+        "date": { "type": "string", "maxLength": 50 },
+        "startTime": { "type": "string", "maxLength": 20 },
+        "endTime": { "type": "string", "maxLength": 20 },
+        "durationHours": { "type": "number" },
+        "campus": { "type": "string", "maxLength": 150 },
+        "academicShift": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "maxLength": 50 },
+        "responsible": { "type": "string", "maxLength": 100 },
+        "observations": { "type": "string", "maxLength": 1000 }
+      },
+      "required": ["institution", "modality", "startTime", "endTime"]
+    },
+    "ChangeRequest": {
+      "title": "ChangeRequest",
+      "description": "Solicitud de reprogramación emitida por una institución",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "institution": { "type": "string", "maxLength": 200 },
+        "originalDate": { "type": "string", "maxLength": 50 },
+        "originalStartTime": { "type": "string", "maxLength": 20 },
+        "originalEndTime": { "type": "string", "maxLength": 20 },
+        "proposedDate": { "type": "string", "maxLength": 50 },
+        "proposedStartTime": { "type": "string", "maxLength": 20 },
+        "proposedEndTime": { "type": "string", "maxLength": 20 },
+        "reason": { "type": "string", "maxLength": 1000 },
+        "contactName": { "type": "string", "maxLength": 150 },
+        "contactRole": { "type": "string", "maxLength": 100 },
+        "contactPhone": { "type": "string", "maxLength": 50 },
+        "status": { "type": "string", "maxLength": 50 },
+        "coordinatorFeedback": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "maxLength": 50 }
+      },
+      "required": ["institution", "proposedDate", "reason", "status"]
+    },
+    "InstitutionProfile": {
+      "title": "InstitutionProfile",
+      "description": "Ficha y datos de contacto de la institución educativa",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "daneCode": { "type": "string", "maxLength": 50 },
+        "name": { "type": "string", "maxLength": 200 },
+        "shortName": { "type": "string", "maxLength": 100 },
+        "municipality": { "type": "string", "maxLength": 100 },
+        "zone": { "type": "string", "maxLength": 50 },
+        "rectorName": { "type": "string", "maxLength": 150 },
+        "rectorPhone": { "type": "string", "maxLength": 50 },
+        "rectorEmail": { "type": "string", "maxLength": 150 },
+        "coordinatorName": { "type": "string", "maxLength": 150 },
+        "coordinatorPhone": { "type": "string", "maxLength": 50 },
+        "notes": { "type": "string", "maxLength": 1000 }
+      },
+      "required": ["daneCode", "name", "municipality"]
+    }
+  },
+  "firestore": {
+    "/sessions/{sessionId}": {
+      "schema": { "$ref": "entities.TrainingSession" },
+      "description": "Colección de sesiones de formación del cronograma"
+    },
+    "/changeRequests/{requestId}": {
+      "schema": { "$ref": "entities.ChangeRequest" },
+      "description": "Colección de solicitudes de reprogramación"
+    },
+    "/institutions/{institutionId}": {
+      "schema": { "$ref": "entities.InstitutionProfile" },
+      "description": "Perfiles y metadatos de las instituciones educativas"
+    }
+  }
+}

@@ -27,6 +27,20 @@ import { analyzeConflictsAndRules } from './utils/conflictChecker';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { loadHtml2Pdf } from './utils/pdfExport';
 import { initialValidatedSessions } from './data/scheduleRulesData';
+import { 
+  testConnection, 
+  subscribeToSessions, 
+  subscribeToChangeRequests, 
+  syncSaveSession, 
+  syncDeleteSession, 
+  syncSaveChangeRequest, 
+  seedFirestoreIfEmpty, 
+  resetFirestoreSessions,
+  auth,
+  signInWithGoogle,
+  logoutUser
+} from './lib/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 
 // Supabase Direct REST Config
 const SUPABASE_URL = "https://qxpolbfxppgnofarfuht.supabase.co/rest/v1";
@@ -238,29 +252,64 @@ export default function App() {
     }
   }, [restrictedInstName]);
 
-  // Sync con Supabase REST
+  // Firebase State & Sync
+  const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
+  const [firebaseSyncStatus, setFirebaseSyncStatus] = useState<'synced' | 'connecting' | 'offline'>('connecting');
+
+  // Inicialización y Sincronización en Tiempo Real con Firebase Firestore
   useEffect(() => {
-    if (!isOnline) return;
-    const pullRemoteData = async () => {
-      try {
-        const res = await fetch(`${SUPABASE_URL}/actividades_cronograma?select=*`, {
-          headers: {
-            'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+    // 1. Probar conectividad con Firestore
+    testConnection();
+
+    // 2. Escuchar estado de autenticación (Google Auth / Admin)
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setFirebaseUser(user);
+      if (user && (user.email === 'pmcp091@gmail.com' || user.email?.toLowerCase().includes('thebiznation'))) {
+        setSessionRole('admin');
+        localStorage.setItem('auth_role', 'admin');
+      }
+    });
+
+    // 3. Suscripción en Tiempo Real a la colección 'sessions' de Firestore
+    let hasAttemptedSeed = false;
+    const unsubscribeSessions = subscribeToSessions((firestoreSessions) => {
+      if (firestoreSessions.length > 0) {
+        const clean = deduplicateSessions(firestoreSessions);
+        setSessions(clean);
+        setFirebaseSyncStatus('synced');
+      } else if (!hasAttemptedSeed) {
+        hasAttemptedSeed = true;
+        // Si Firestore está vacío, sembramos la matriz oficial inicial
+        const initialClean = deduplicateSessions(initialValidatedSessions || []).map((s, idx) => ({
+          ...s,
+          itemNumber: idx + 1
+        }));
+        seedFirestoreIfEmpty(initialClean).then((seeded) => {
+          if (seeded) {
+            setFirebaseSyncStatus('synced');
           }
         });
-        if (res.ok) {
-          const remote = await res.json();
-          if (Array.isArray(remote) && remote.length > 0) {
-            console.log('Sincronización remota completada:', remote.length);
-          }
-        }
-      } catch (e) {
-        console.warn('Operando en modo local:', e);
       }
+    }, (err) => {
+      console.warn('Firestore offline o error de conexión en sesiones:', err);
+      setFirebaseSyncStatus('offline');
+    });
+
+    // 4. Suscripción en Tiempo Real a las solicitudes de cambio
+    const unsubscribeRequests = subscribeToChangeRequests((firestoreRequests) => {
+      if (firestoreRequests.length > 0) {
+        setChangeRequests(firestoreRequests);
+      }
+    }, (err) => {
+      console.warn('Firestore offline o error de conexión en solicitudes:', err);
+    });
+
+    return () => {
+      unsubscribeAuth();
+      unsubscribeSessions();
+      unsubscribeRequests();
     };
-    pullRemoteData();
-  }, [isOnline]);
+  }, []);
 
   // Auto-saves
   useEffect(() => { 
@@ -413,9 +462,26 @@ export default function App() {
     setAdminKeyError('Clave incorrecta. Ingrese la clave maestra de Coordinación (ADMIN2026).');
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setAdminKeyError('');
+      const user = await signInWithGoogle();
+      if (user) {
+        setSessionRole('admin');
+        localStorage.setItem('auth_role', 'admin');
+        setShowAdminLoginModal(false);
+        setToastMessage(`Bienvenido Coordinador: ${user.displayName || user.email}`);
+      }
+    } catch (err: any) {
+      console.warn("Error en inicio de sesión con Google:", err);
+      setAdminKeyError(err.message || "Error al autenticar con Google.");
+    }
+  };
+
   const handleLogout = () => {
     setSessionRole('viewer');
     localStorage.removeItem('auth_role');
+    logoutUser().catch(console.warn);
   };
 
   const handleClearRestrictedInst = () => {
@@ -450,6 +516,7 @@ export default function App() {
       observations: `${session.observations || ''} [Duplicado]`.trim()
     };
     setSessions(prev => deduplicateSessions([duplicated, ...prev]));
+    syncSaveSession(duplicated).catch(err => console.warn('Error guardando en Firestore:', err));
   };
 
   const handleDeleteSession = (id: string) => {
@@ -465,6 +532,7 @@ export default function App() {
     const deletedInst = sessionToDelete.institution;
     const deletedId = sessionToDelete.id;
     setSessions(prev => prev.filter(s => s.id !== deletedId));
+    syncDeleteSession(deletedId).catch(err => console.warn('Error eliminando en Firestore:', err));
     setSessionToDelete(null);
     setToastMessage(`Sesión de "${deletedInst}" eliminada correctamente.`);
   };
@@ -480,6 +548,7 @@ export default function App() {
         : [savedSession, ...prev];
       return updated;
     });
+    syncSaveSession(savedSession).catch(err => console.warn('Error guardando en Firestore:', err));
     setToastMessage(`Sesión de "${savedSession.institution}" guardada exitosamente.`);
   };
 
@@ -496,6 +565,8 @@ export default function App() {
     const target = institutions.find(i => i.id === id);
     setInstitutions(prev => prev.filter(i => i.id !== id));
     if (target) {
+      const sessionsToDelete = sessions.filter(s => s.institution.toLowerCase() === target.name.toLowerCase());
+      sessionsToDelete.forEach(s => syncDeleteSession(s.id).catch(console.warn));
       setSessions(prev => prev.filter(s => s.institution.toLowerCase() !== target.name.toLowerCase()));
     }
   };
@@ -508,6 +579,7 @@ export default function App() {
 
   const handleSubmitRescheduleRequest = (req: RescheduleRequest) => {
     setChangeRequests(prev => [req, ...prev]);
+    syncSaveChangeRequest(req).catch(err => console.warn('Error guardando solicitud en Firestore:', err));
     setIsRescheduleModalOpen(false);
     setRescheduleSessionTarget(null);
     setToastMessage('Solicitud enviada al Coordinador con éxito');
@@ -517,12 +589,11 @@ export default function App() {
     const targetReq = changeRequests.find(r => r.id === requestId);
     if (!targetReq) return;
 
+    const updatedReq: ChangeRequest = { ...targetReq, status: 'Aprobada' as const, coordinatorFeedback: feedback };
+
     // 1. Actualizar el estado de la solicitud a 'Aprobada'
-    setChangeRequests(prev => prev.map(r => 
-      r.id === requestId 
-        ? { ...r, status: 'Aprobada' as const, coordinatorFeedback: feedback } 
-        : r
-    ));
+    setChangeRequests(prev => prev.map(r => r.id === requestId ? updatedReq : r));
+    syncSaveChangeRequest(updatedReq).catch(err => console.warn('Error actualizando solicitud en Firestore:', err));
 
     // 2. Modificar la sesión en el cronograma con la nueva fecha y horas
     setSessions(prev => prev.map(s => {
@@ -548,7 +619,7 @@ export default function App() {
           updatedDatesScheduled[mKey] = [targetReq.proposedDate];
         }
 
-        return {
+        const updatedSession: TrainingSession = {
           ...s,
           specificDate: targetReq.proposedDate,
           date: targetReq.proposedDate,
@@ -562,6 +633,8 @@ export default function App() {
             ? `${s.observations} [Aprobado por Coordinación: ${targetReq.proposedDate}]` 
             : `Aprobado por Coordinación: ${targetReq.proposedDate}`
         };
+        syncSaveSession(updatedSession).catch(err => console.warn('Error actualizando sesión en Firestore:', err));
+        return updatedSession;
       }
       return s;
     }));
@@ -573,11 +646,9 @@ export default function App() {
     const targetReq = changeRequests.find(r => r.id === requestId);
     if (!targetReq) return;
 
-    setChangeRequests(prev => prev.map(r => 
-      r.id === requestId 
-        ? { ...r, status: 'Rechazada' as const, coordinatorFeedback: feedback } 
-        : r
-    ));
+    const updatedReq: ChangeRequest = { ...targetReq, status: 'Rechazada' as const, coordinatorFeedback: feedback };
+    setChangeRequests(prev => prev.map(r => r.id === requestId ? updatedReq : r));
+    syncSaveChangeRequest(updatedReq).catch(err => console.warn('Error actualizando solicitud rechazada en Firestore:', err));
 
     setToastMessage(`Solicitud de ${targetReq.institution} rechazada.`);
   };
@@ -666,14 +737,16 @@ export default function App() {
               Salir de Coordinación
             </button>
             <button
-              onClick={() => {
-                if (window.confirm("¿Estás seguro? Se restablecerá el cronograma a la matriz oficial validada.")) {
+              onClick={async () => {
+                if (window.confirm("¿Estás seguro? Se restablecerá el cronograma a la matriz oficial validada y se sincronizará con Firebase.")) {
                   localStorage.removeItem(STORAGE_KEY);
-                  setSessions(deduplicateSessions(initialValidatedSessions).map((s, idx) => ({ ...s, itemNumber: idx + 1 })));
-                  window.location.reload();
+                  const clean = deduplicateSessions(initialValidatedSessions).map((s, idx) => ({ ...s, itemNumber: idx + 1 }));
+                  setSessions(clean);
+                  await resetFirestoreSessions(clean).catch(err => console.warn(err));
+                  setToastMessage("Cronograma restablecido a la matriz oficial y sincronizado con Firebase.");
                 }
               }}
-              className="text-xs text-amber-400 hover:text-amber-300 underline font-medium ml-2"
+              className="text-xs text-amber-400 hover:text-amber-300 underline font-medium ml-2 cursor-pointer"
             >
               🔄 Restablecer Matriz Oficial
             </button>
@@ -712,6 +785,7 @@ export default function App() {
         isInstitutionalKiosk={isInstitutionalKiosk}
         isDarkMode={isDarkMode}
         onToggleDarkMode={toggleDarkMode}
+        firebaseSyncStatus={firebaseSyncStatus}
       />
 
       {/* Pestaña Accesible para Dashboard (Solo para administradores o vista universal) */}
@@ -1068,11 +1142,31 @@ export default function App() {
                 </button>
                 <button 
                   type="submit"
-                  className="w-1/2 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold py-2.5 rounded-xl transition shadow-lg text-xs"
+                  className="w-1/2 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold py-2.5 rounded-xl transition shadow-lg text-xs cursor-pointer"
                 >
                   Desbloquear
                 </button>
               </div>
+
+              <div className="relative flex py-2 items-center">
+                <div className="grow border-t border-slate-700"></div>
+                <span className="shrink mx-3 text-[11px] text-slate-400 uppercase tracking-wider font-semibold">o continuar con</span>
+                <div className="grow border-t border-slate-700"></div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 px-4 rounded-xl border border-slate-600 transition shadow-xs text-xs cursor-pointer"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.37 7.33 24 12 24z"/>
+                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.97 0 12s.46 3.84 1.26 5.42l4.02-3.15z"/>
+                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.25 2.63 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
+                </svg>
+                <span>Acceder con Google (Coordinador)</span>
+              </button>
             </form>
           </div>
         </div>
@@ -1246,11 +1340,13 @@ export default function App() {
           if (data.institutions) setInstitutions(data.institutions);
           if (data.branding) setBranding(data.branding);
         }}
-        onResetAll={() => {
+        onResetAll={async () => {
           const res = resetToDefaults();
           setSessions(res.sessions);
           setInstitutions(res.institutions);
           setBranding(res.branding);
+          await resetFirestoreSessions(res.sessions).catch(console.warn);
+          setToastMessage('Cronograma restablecido y sincronizado con Firebase.');
         }}
       />
       <PedroGuideModal
