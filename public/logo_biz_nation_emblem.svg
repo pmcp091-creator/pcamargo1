@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" width="600" height="800">
+  <!-- Yellow Background -->
+  <rect width="600" height="800" rx="28" fill="#fed800"/>
+
+  <!-- Dark Icon in Center -->
+  <g transform="translate(300, 420)">
+    <!-- Top Center Square Ray -->
+    <rect x="-35" y="-310" width="70" height="70" fill="#1e2430" rx="4"/>
+
+    <!-- Left Tilted Diamond Ray -->
+    <rect x="-225" y="-260" width="66" height="66" fill="#1e2430" rx="4" transform="rotate(45, -192, -227)"/>
+
+    <!-- Right Tilted Diamond Ray -->
+    <rect x="125" y="-260" width="66" height="66" fill="#1e2430" rx="4" transform="rotate(45, 158, -227)"/>
+
+    <!-- Bulb Ring Head -->
+    <path d="M 0 -170
+             A 160 160 0 1 1 -64 124
+             L -64 165
+             L 64 165
+             L 64 124
+             A 160 160 0 0 1 0 -170 Z"
+          fill="#1e2430" fill-rule="evenodd"/>
+    
+    <!-- Bulb Ring Inner Hollow -->
+    <circle cx="0" cy="-10" r="96" fill="#fed800"/>
+
+    <!-- Base Z-screw / N -->
+    <g transform="translate(-64, 195)">
+      <!-- Top bar -->
+      <rect x="0" y="0" width="128" height="34" fill="#1e2430" rx="2"/>
+      <!-- Diagonal -->
+      <polygon points="128,34 128,58 38,110 0,110 0,86 90,34" fill="#1e2430"/>
+      <!-- Bottom bar -->
+      <rect x="0" y="104" width="128" height="34" fill="#1e2430" rx="2"/>
+    </g>
+  </g>
+</svg>

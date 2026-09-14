@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="128" fill="#0f172a"/>
+  <circle cx="256" cy="256" r="210" stroke="#3b82f6" stroke-width="8" stroke-dasharray="16 12" opacity="0.4"/>
+  <defs>
+    <linearGradient id="bizGrad" x1="120" y1="120" x2="392" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3b82f6"/>
+      <stop offset="0.5" stop-color="#06b6d4"/>
+      <stop offset="1" stop-color="#10b981"/>
+    </linearGradient>
+  </defs>
+  <!-- Calendar and transformation symbol -->
+  <rect x="136" y="140" width="240" height="232" rx="28" fill="#1e293b" stroke="url(#bizGrad)" stroke-width="12"/>
+  <!-- Calendar header -->
+  <path d="M136 196H376" stroke="url(#bizGrad)" stroke-width="10"/>
+  <!-- Pins -->
+  <rect x="184" y="112" width="24" height="48" rx="12" fill="#38bdf8"/>
+  <rect x="304" y="112" width="24" height="48" rx="12" fill="#38bdf8"/>
+  <!-- Transformation / Spark Star in the center -->
+  <path d="M256 230L266 270L306 280L266 290L256 330L246 290L206 280L246 270Z" fill="#f59e0b"/>
+  <!-- Check marks and dots -->
+  <circle cx="192" cy="246" r="10" fill="#10b981"/>
+  <circle cx="320" cy="246" r="10" fill="#06b6d4"/>
+  <circle cx="192" cy="314" r="10" fill="#3b82f6"/>
+  <circle cx="320" cy="314" r="10" fill="#a855f7"/>
+</svg>

@@ -1,0 +1,6 @@
+{
+  "name": "Cronograma Vocación que Transforma",
+  "description": "Sistema de gestión, edición, consulta e impresión offline del cronograma de formaciones para The Biz Nation en Uribia, Riohacha y Manaure.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

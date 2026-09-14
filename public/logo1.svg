@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 280" width="920" height="280">
+  <rect width="920" height="280" rx="16" fill="#1e2430"/>
+  
+  <!-- Bulb Icon Group (left) -->
+  <g transform="translate(130, 140)">
+    <!-- Top Rays: center is square, left and right are tilted 45 deg diamonds -->
+    <rect x="-16" y="-115" width="32" height="32" fill="#fed800" rx="2"/>
+    <rect x="-85" y="-95" width="30" height="30" fill="#fed800" rx="2" transform="rotate(45, -70, -80)"/>
+    <rect x="55" y="-95" width="30" height="30" fill="#fed800" rx="2" transform="rotate(45, 70, -80)"/>
+
+    <!-- Bulb Ring Head -->
+    <path d="M 0 -68
+             A 58 58 0 1 1 -24 38
+             L -24 55
+             L 24 55
+             L 24 38
+             A 58 58 0 0 1 0 -68 Z"
+          fill="#fed800" fill-rule="evenodd"/>
+    
+    <!-- Bulb Ring Inner Hollow -->
+    <circle cx="0" cy="-10" r="35" fill="#1e2430"/>
+
+    <!-- Bulb Neck separator/cutout -->
+    <rect x="-18" y="50" width="36" height="5" fill="#1e2430"/>
+
+    <!-- Base Z-screw -->
+    <g transform="translate(-24, 60)">
+      <!-- Top bar -->
+      <rect x="0" y="0" width="48" height="13" fill="#fed800" rx="1"/>
+      <!-- Diagonal -->
+      <polygon points="48,13 48,22 14,40 0,40 0,31 34,13" fill="#fed800"/>
+      <!-- Bottom bar -->
+      <rect x="0" y="37" width="48" height="13" fill="#fed800" rx="1"/>
+    </g>
+  </g>
+
+  <!-- Text "Biz Nation" -->
+  <g transform="translate(235, 172)">
+    <text font-family="'Plus Jakarta Sans', 'Inter', 'Montserrat', 'Segoe UI', system-ui, sans-serif" 
+          font-weight="800" 
+          font-size="112" 
+          letter-spacing="-1.5" 
+          fill="#ffffff">
+      Biz Nation
+    </text>
+  </g>
+</svg>
