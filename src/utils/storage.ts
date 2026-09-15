@@ -184,6 +184,13 @@ export function saveAutoSnapshot(
     second: '2-digit'
   });
 
+  // Keep a clean, compact copy of branding (without oversized data URI strings)
+  const compactBranding: BrandingSettings = {
+    ...branding,
+    logo1Url: branding.logo1Url?.startsWith('data:') ? DEFAULT_BRANDING.logo1Url : branding.logo1Url,
+    logo2Url: branding.logo2Url?.startsWith('data:') ? DEFAULT_BRANDING.logo2Url : branding.logo2Url
+  };
+
   const snapshot: BackupSnapshot = {
     id: `snap_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     timestamp: now.toISOString(),
@@ -193,17 +200,39 @@ export function saveAutoSnapshot(
     data: {
       sessions: JSON.parse(JSON.stringify(sessions)),
       institutions: JSON.parse(JSON.stringify(institutions)),
-      branding: JSON.parse(JSON.stringify(branding))
+      branding: compactBranding
     }
   };
 
   try {
     const existing = loadAutoSnapshots();
-    // Keep max 15 snapshots (most recent first)
-    const updated = [snapshot, ...existing].slice(0, 15);
-    localStorage.setItem(STORAGE_KEYS.SNAPSHOTS, JSON.stringify(updated));
+    // Try saving with the most recent snapshots, gracefully pruning older ones if quota is limited
+    const candidates = [snapshot, ...existing];
+    let saved = false;
+
+    // Prune downward from 3 to 1 snapshots if storage limit is approached
+    for (const maxCount of [3, 2, 1]) {
+      try {
+        const slice = candidates.slice(0, maxCount);
+        localStorage.setItem(STORAGE_KEYS.SNAPSHOTS, JSON.stringify(slice));
+        saved = true;
+        break;
+      } catch (e) {
+        // Quota exceeded for this slice size, try smaller size
+        continue;
+      }
+    }
+
+    if (!saved) {
+      // If even 1 snapshot with all data exceeds quota, store summary only or clear stale key
+      try {
+        localStorage.removeItem(STORAGE_KEYS.SNAPSHOTS);
+      } catch {
+        // Ignore fallback clear error
+      }
+    }
   } catch (err) {
-    console.error('Error saving snapshot:', err);
+    console.warn('Advertencia al guardar snapshot de respaldo en localStorage:', err);
   }
 
   return snapshot;
@@ -284,10 +313,18 @@ export const getExportFileName = (instName?: string | null, extension: 'xlsx' | 
 export async function exportToExcel(
   sessions: TrainingSession[],
   institutions?: InstitutionProfile[],
-  restrictedInstName?: string | null
+  restrictedInstName?: string | null,
+  branding?: BrandingSettings,
+  selectedInstitutions?: string[]
 ): Promise<void> {
   try {
-    await exportToExcelFile(sessions, institutions, restrictedInstName);
+    await exportToExcelFile({
+      sessions,
+      institutions,
+      restrictedInstName,
+      branding: branding || loadBranding(),
+      selectedInstitutions
+    });
   } catch (err) {
     console.error('Error exportando archivo Excel (.xlsx), usando respaldo CSV:', err);
     exportToCSV(sessions, restrictedInstName);

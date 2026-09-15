@@ -21,8 +21,17 @@ import {
 } from 'lucide-react';
 import { SessionDetailModal } from './SessionDetailModal';
 
-interface CalendarViewProps {
+export interface CalendarViewProps {
   sessions: TrainingSession[];
+  filteredSessions?: TrainingSession[];
+  selectedInstitution?: string;
+  setSelectedInstitution?: (inst: string) => void;
+  selectedMunicipality?: string;
+  setSelectedMunicipality?: (mun: string) => void;
+  selectedModality?: string;
+  setSelectedModality?: (mod: string) => void;
+  selectedAudience?: string;
+  setSelectedAudience?: (aud: string) => void;
   setSessions?: React.Dispatch<React.SetStateAction<TrainingSession[]>>;
   institutions?: InstitutionProfile[];
   onEditSession: (session: TrainingSession) => void;
@@ -42,11 +51,26 @@ const MONTH_NAMES = [
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
 ];
 
+const MONTH_NAMES_SHORT = [
+  'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+  'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+];
+
 const DAYS_HEADER = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 const WEEKDAYS_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const WEEKDAYS_SHORT_7 = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 export const CalendarView: React.FC<CalendarViewProps> = ({
   sessions,
+  filteredSessions: propFilteredSessions,
+  selectedInstitution: propSelectedInstitution,
+  setSelectedInstitution: propSetSelectedInstitution,
+  selectedMunicipality: propSelectedMunicipality,
+  setSelectedMunicipality: propSetSelectedMunicipality,
+  selectedModality: propSelectedModality,
+  setSelectedModality: propSetSelectedModality,
+  selectedAudience: propSelectedAudience,
+  setSelectedAudience: propSetSelectedAudience,
   setSessions,
   institutions = [],
   onEditSession,
@@ -66,43 +90,116 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const [currentMonth, setCurrentMonth] = useState(8); // 8 = Septiembre (0-indexed)
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
 
-  // Institution filter state
-  const [selectedInstitutionFilter, setSelectedInstitutionFilter] = useState<string>('all');
+  // Active date for weekly view (starts on Sunday of the week containing Sept 1, 2026)
+  const [weekStartDate, setWeekStartDate] = useState<Date>(() => {
+    const d = new Date(2026, 8, 1);
+    const day = d.getDay(); // 0 = Sunday
+    d.setDate(d.getDate() - day);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
 
-  // Filters
-  const [filterMuni, setFilterMuni] = useState<string>('ALL');
-  const [filterMod, setFilterMod] = useState<string>('ALL');
-  const [filterPob, setFilterPob] = useState<string>('ALL');
+  // Local fallback filters if not passed as props
+  const [localInstitution, setLocalInstitution] = useState<string>('all');
+  const [localMuni, setLocalMuni] = useState<string>('all');
+  const [localMod, setLocalMod] = useState<string>('all');
+  const [localPob, setLocalPob] = useState<string>('all');
+
+  const selectedInstitutionFilter = propSelectedInstitution !== undefined ? propSelectedInstitution : localInstitution;
+  const setSelectedInstitutionFilter = propSetSelectedInstitution || setLocalInstitution;
+
+  const filterMuni = propSelectedMunicipality !== undefined ? propSelectedMunicipality : localMuni;
+  const setFilterMuni = propSetSelectedMunicipality || setLocalMuni;
+
+  const filterMod = propSelectedModality !== undefined ? propSelectedModality : localMod;
+  const setFilterMod = propSetSelectedModality || setLocalMod;
+
+  const filterPob = propSelectedAudience !== undefined ? propSelectedAudience : localPob;
+  const setFilterPob = propSetSelectedAudience || setLocalPob;
 
   // Selected session for detail modal
   const [selectedSessionForDetail, setSelectedSessionForDetail] = useState<TrainingSession | null>(null);
 
   // Month navigation
   const prevMonth = () => {
+    let newYear = currentYear;
+    let newMonth = currentMonth;
     if (currentMonth === 0) {
-      setCurrentMonth(11);
-      setCurrentYear(currentYear - 1);
+      newMonth = 11;
+      newYear = currentYear - 1;
     } else {
-      setCurrentMonth(currentMonth - 1);
+      newMonth = currentMonth - 1;
     }
+    setCurrentMonth(newMonth);
+    setCurrentYear(newYear);
+
+    // Synchronize weekStartDate to first Sunday of the newly selected month
+    const d = new Date(newYear, newMonth, 1);
+    const day = d.getDay();
+    d.setDate(d.getDate() - day);
+    d.setHours(0, 0, 0, 0);
+    setWeekStartDate(d);
   };
 
   const nextMonth = () => {
+    let newYear = currentYear;
+    let newMonth = currentMonth;
     if (currentMonth === 11) {
-      setCurrentMonth(0);
-      setCurrentYear(currentYear + 1);
+      newMonth = 0;
+      newYear = currentYear + 1;
     } else {
-      setCurrentMonth(currentMonth + 1);
+      newMonth = currentMonth + 1;
     }
+    setCurrentMonth(newMonth);
+    setCurrentYear(newYear);
+
+    // Synchronize weekStartDate to first Sunday of the newly selected month
+    const d = new Date(newYear, newMonth, 1);
+    const day = d.getDay();
+    d.setDate(d.getDate() - day);
+    d.setHours(0, 0, 0, 0);
+    setWeekStartDate(d);
   };
 
   const goToSept2026 = () => {
     setCurrentYear(2026);
     setCurrentMonth(8);
+    const d = new Date(2026, 8, 1);
+    const day = d.getDay();
+    d.setDate(d.getDate() - day);
+    d.setHours(0, 0, 0, 0);
+    setWeekStartDate(d);
+  };
+
+  // Week navigation (steps by 7 days and syncs currentYear/currentMonth with active week)
+  const prevWeek = () => {
+    const newDate = new Date(weekStartDate);
+    newDate.setDate(newDate.getDate() - 7);
+    setWeekStartDate(newDate);
+
+    // Use midweek (Wednesday / 3 days after Sunday) to determine active month/year
+    const midWeek = new Date(newDate);
+    midWeek.setDate(midWeek.getDate() + 3);
+    setCurrentMonth(midWeek.getMonth());
+    setCurrentYear(midWeek.getFullYear());
+  };
+
+  const nextWeek = () => {
+    const newDate = new Date(weekStartDate);
+    newDate.setDate(newDate.getDate() + 7);
+    setWeekStartDate(newDate);
+
+    const midWeek = new Date(newDate);
+    midWeek.setDate(midWeek.getDate() + 3);
+    setCurrentMonth(midWeek.getMonth());
+    setCurrentYear(midWeek.getFullYear());
   };
 
   // Filtered sessions
   const filteredSessions = useMemo(() => {
+    if (propFilteredSessions) {
+      return propFilteredSessions;
+    }
     return sessions.filter(s => {
       let match = true;
 
@@ -111,15 +208,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         match = match && (s.institution === selectedInstitutionFilter || (s.campus && s.campus.includes(selectedInstitutionFilter)));
       }
 
-      if (filterMuni !== 'ALL' && s.municipality.toUpperCase() !== filterMuni.toUpperCase()) match = false;
-      if (filterMod !== 'ALL' && s.modality !== filterMod) match = false;
-      if (filterPob !== 'ALL') {
+      if (filterMuni !== 'all' && filterMuni !== 'ALL' && s.municipality.toUpperCase() !== filterMuni.toUpperCase()) match = false;
+      if (filterMod !== 'all' && filterMod !== 'ALL' && s.modality !== filterMod) match = false;
+      if (filterPob !== 'all' && filterPob !== 'ALL') {
         if (filterPob === 'Docentes' && !s.targetAudience.includes('Docentes')) match = false;
         if (filterPob === 'Estudiantes' && !s.targetAudience.includes('Estudiantes')) match = false;
       }
       return match;
     });
-  }, [sessions, selectedInstitutionFilter, filterMuni, filterMod, filterPob]);
+  }, [propFilteredSessions, sessions, selectedInstitutionFilter, filterMuni, filterMod, filterPob]);
 
   // Map sessions to dates in the active month
   // A session matches a date if:
@@ -162,6 +259,34 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay(); // 0 = Sun
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+  // Weekly view days: 7 consecutive days starting from weekStartDate
+  const weekDays = useMemo(() => {
+    return Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(weekStartDate);
+      d.setDate(d.getDate() + i);
+      const year = d.getFullYear();
+      const month = d.getMonth();
+      const dayNum = d.getDate();
+      const dayOfWeekIdx = d.getDay(); // 0 = Domingo, 1 = Lunes, ...
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+      const dayName = DAYS_HEADER[dayOfWeekIdx];
+      const shortDayName = WEEKDAYS_SHORT_7[dayOfWeekIdx];
+      const shortMonthName = MONTH_NAMES_SHORT[month];
+      const headerLabel = `${shortDayName} ${dayNum} ${shortMonthName}`;
+
+      return {
+        date: d,
+        dateStr,
+        dayNum,
+        dayOfWeekIdx,
+        dayName,
+        shortDayName,
+        shortMonthName,
+        headerLabel
+      };
+    });
+  }, [weekStartDate]);
 
   return (
     <div className="space-y-4">
@@ -245,10 +370,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 onChange={e => setFilterMuni(e.target.value)}
                 className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-white focus:outline-none focus:border-amber-400"
               >
-                <option value="ALL">Todos los municipios</option>
-                <option value="URIBIA">Uribia</option>
-                <option value="RIOHACHA">Riohacha</option>
-                <option value="MANAURE">Manaure</option>
+                <option value="all">Todos los municipios</option>
+                <option value="Uribia">Uribia</option>
+                <option value="Riohacha">Riohacha</option>
+                <option value="Manaure">Manaure</option>
               </select>
             </div>
 
@@ -260,7 +385,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               <select
                 value={selectedInstitutionFilter}
                 onChange={(e) => setSelectedInstitutionFilter(e.target.value)}
-                className="bg-slate-800/90 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-400 focus:outline-none transition cursor-pointer"
+                className="bg-slate-800/90 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl px-3 py-2 focus:ring-2 focus:ring-amber-400 focus:outline-none transition cursor-pointer max-w-[220px] truncate"
               >
                 <option value="all">Todas las instituciones</option>
                 {institutions.map((inst) => (
@@ -279,10 +404,9 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 onChange={e => setFilterMod(e.target.value)}
                 className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-white focus:outline-none focus:border-amber-400"
               >
-                <option value="ALL">Todas las modalidades</option>
+                <option value="all">Todas las modalidades</option>
                 <option value="Presencial">Solo Presencial 🏛️</option>
                 <option value="Virtual">Solo Virtual 💻</option>
-                <option value="Microlearning">Solo Microlearning 📱</option>
               </select>
             </div>
 
@@ -294,7 +418,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 onChange={e => setFilterPob(e.target.value)}
                 className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-white focus:outline-none focus:border-amber-400"
               >
-                <option value="ALL">Toda la población</option>
+                <option value="all">Toda la población</option>
                 <option value="Docentes">Solo Docentes</option>
                 <option value="Estudiantes">Solo Estudiantes</option>
               </select>
@@ -427,8 +551,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                  ['petsuapa', 'guarerapu', 'puay', 'walakaly', 'apaimana', 'jaipa', 'yotojoroin'].some(name => s.institution?.toLowerCase().includes(name)))
               );
 
-              // Contar instituciones únicas (sedes físicas reales activas ese día)
-              const uniqueUribiaSchools = Array.from(new Set(uribiaSessionsThisDay.map(s => s.institution?.trim()))).filter(Boolean);
+              // Contar instituciones / sedes físicas únicas reales activas ese día
+              const uniqueUribiaSchools = Array.from(new Set(uribiaSessionsThisDay.map(s => (s.campus || s.institution)?.trim()))).filter(Boolean);
               const uribiaCount = uniqueUribiaSchools.length;
               const isOvercapacity = uribiaCount > 2;
 
@@ -560,87 +684,154 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       {/* WEEK VIEW CONTAINER */}
       {viewMode === 'week' && (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-2xl p-4 sm:p-5 text-slate-800 dark:text-white transition-colors">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Clock className="w-5 h-5 text-amber-500" />
-              <span>Distribución Semanal de Actividades</span>
-            </h2>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
-              Visualización agrupada por día de la semana con validación de simultaneidad
-            </span>
+          {/* Week Navigation Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 border-b border-slate-200 dark:border-slate-800 pb-4">
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <button
+                onClick={prevWeek}
+                className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-200 dark:border-slate-700 transition"
+                title="Semana anterior"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div>
+                <h2 className="text-base sm:text-xl font-black text-slate-900 dark:text-white tracking-wide flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-amber-500 shrink-0" />
+                  <span>
+                    Semana del {weekDays[0].dayNum} {weekDays[0].shortMonthName} al {weekDays[6].dayNum} {weekDays[6].shortMonthName} {weekDays[6].date.getFullYear()}
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 capitalize">
+                  Mes activo: {MONTH_NAMES[currentMonth]} {currentYear} • 7 Días sincronizados
+                </p>
+              </div>
+              <button
+                onClick={nextWeek}
+                className="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl text-slate-700 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-200 dark:border-slate-700 transition"
+                title="Semana siguiente"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+              <button
+                onClick={goToSept2026}
+                className="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-amber-700 dark:text-amber-300 font-bold px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 transition"
+              >
+                Semana Actual (Sep 2026)
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-xs">
+              <span className="text-slate-500 dark:text-slate-400 hidden md:inline">
+                Filtro activo aplicado a {filteredSessions.length} formaciones globales
+              </span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'].map(day => {
-              const daySessions = filteredSessions.filter(s => Array.isArray(s.daysOfWeek) && s.daysOfWeek.includes(day));
-              const daySessionsUnique = deduplicateSessions(daySessions);
+          {/* 7 Columns Grid for Week Days */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
+            {weekDays.map(dayInfo => {
+              const rawSessions = getSessionsForDate(dayInfo.dateStr, dayInfo.dayName, dayInfo.dayNum);
+              const daySessionsUnique = deduplicateSessions(rawSessions);
+
               const uribiaPresencials = daySessionsUnique.filter(
                 s => (s.municipality || '').toUpperCase() === 'URIBIA' && s.modality === 'Presencial'
               );
               const uniqueInsts = Array.from(new Set(uribiaPresencials.map(s => s.institution || '')));
               const hasConflict = uniqueInsts.length > 2;
 
+              const isWeekend = dayInfo.dayOfWeekIdx === 0 || dayInfo.dayOfWeekIdx === 6;
+
               return (
                 <div
-                  key={day}
+                  key={dayInfo.dateStr}
                   className={`bg-slate-50 dark:bg-slate-800/70 rounded-xl border overflow-hidden flex flex-col ${
-                    hasConflict ? 'border-rose-400 dark:border-rose-500/80 ring-2 ring-rose-500/20' : 'border-slate-200 dark:border-slate-700'
+                    hasConflict
+                      ? 'border-rose-400 dark:border-rose-500/80 ring-2 ring-rose-500/20'
+                      : 'border-slate-200 dark:border-slate-700'
                   }`}
                 >
                   {/* Day Column Header */}
-                  <div className={`p-3 border-b flex items-center justify-between ${
-                    day === 'Sábado' ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-700/40' :
-                    hasConflict ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-700/40' :
-                    'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
-                  }`}>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-extrabold text-slate-900 dark:text-white">{day}</span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
-                        {daySessionsUnique.length}
+                  <div
+                    className={`p-2.5 border-b flex items-center justify-between ${
+                      dayInfo.dayName === 'Sábado'
+                        ? 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200 dark:border-indigo-700/40'
+                        : dayInfo.dayName === 'Domingo'
+                        ? 'bg-slate-200/60 dark:bg-slate-800 border-slate-300 dark:border-slate-700'
+                        : hasConflict
+                        ? 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-700/40'
+                        : 'bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-black text-slate-900 dark:text-white truncate">
+                          {dayInfo.headerLabel}
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                        {dayInfo.dayName}
                       </span>
                     </div>
 
-                    <button
-                      onClick={() => onAddSessionForDate('2026-09-15')}
-                      className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-500 flex items-center gap-1 font-semibold"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Añadir</span>
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                          daySessionsUnique.length > 0
+                            ? 'bg-amber-400 text-slate-950 shadow-2xs'
+                            : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        {daySessionsUnique.length}
+                      </span>
+
+                      {isAdmin && (
+                        <button
+                          onClick={() => onAddSessionForDate(dayInfo.dateStr)}
+                          className="text-xs text-amber-600 dark:text-amber-400 hover:text-amber-500 p-1 rounded hover:bg-amber-500/10 transition"
+                          title={`Añadir sesión el ${dayInfo.headerLabel}`}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Sessions in day */}
-                  <div className="p-3 space-y-2 flex-1 overflow-y-auto max-h-[350px]">
+                  <div className="p-2 space-y-2 flex-1 overflow-y-auto max-h-[420px]">
                     {daySessionsUnique.length === 0 ? (
-                      <p className="text-xs text-slate-400 dark:text-slate-500 italic text-center py-4">
-                        Sin formaciones programadas
+                      <p className="text-[11px] text-slate-400 dark:text-slate-500 italic text-center py-6">
+                        {isWeekend ? 'Fin de semana' : 'Sin sesiones'}
                       </p>
                     ) : (
                       daySessionsUnique.map(session => (
                         <div
                           key={session.id}
                           onClick={() => setSelectedSessionForDetail(session)}
-                          className="p-2.5 bg-white dark:bg-slate-900/90 rounded-lg border border-slate-200 dark:border-slate-700/80 hover:border-amber-400 transition cursor-pointer space-y-1.5 shadow-xs"
+                          className="p-2 bg-white dark:bg-slate-900/90 rounded-lg border border-slate-200 dark:border-slate-700/80 hover:border-amber-400 transition cursor-pointer space-y-1 shadow-2xs hover:shadow-xs group"
                         >
                           <div className="flex items-start justify-between gap-1">
-                            <span className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[170px]">
+                            <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition" title={session.institution}>
                               {session.institution}
                             </span>
-                            <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
-                              session.municipality.toUpperCase() === 'URIBIA' ? 'bg-amber-100 dark:bg-amber-400/20 text-amber-800 dark:text-amber-300' :
-                              session.municipality.toUpperCase() === 'RIOHACHA' ? 'bg-sky-100 dark:bg-sky-400/20 text-sky-800 dark:text-sky-300' :
-                              'bg-emerald-100 dark:bg-emerald-400/20 text-emerald-800 dark:text-emerald-300'
-                            }`}>
+                            <span
+                              className={`text-[9px] font-bold px-1 py-0.2 rounded shrink-0 ${
+                                (session.municipality || '').toUpperCase() === 'URIBIA'
+                                  ? 'bg-amber-100 dark:bg-amber-400/20 text-amber-800 dark:text-amber-300'
+                                  : (session.municipality || '').toUpperCase() === 'RIOHACHA'
+                                  ? 'bg-sky-100 dark:bg-sky-400/20 text-sky-800 dark:text-sky-300'
+                                  : 'bg-emerald-100 dark:bg-emerald-400/20 text-emerald-800 dark:text-emerald-300'
+                              }`}
+                            >
                               {session.municipality}
                             </span>
                           </div>
 
-                          <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300">
+                          <div className="flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-300">
                             <span>{session.startTime} - {session.endTime}</span>
                             <span className="font-semibold text-slate-500 dark:text-slate-400">{session.modality}</span>
                           </div>
 
-                          <div className="text-[10px] text-indigo-600 dark:text-indigo-300 truncate font-medium">
+                          <div className="text-[10px] text-indigo-600 dark:text-indigo-300 truncate font-medium" title={session.trainingType}>
                             {session.trainingType}
                           </div>
                         </div>

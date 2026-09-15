@@ -97,6 +97,10 @@ export interface BrandingSettings {
   logo1Name: string;
   logo2Url: string; // The Biz Nation logo
   logo2Name: string;
+  logo3Url?: string; // ACDI / VOCA
+  logo4Url?: string; // Promigas
+  logo5Url?: string; // Enlaza
+  logo6Url?: string; // Additional partner
   programTitle: string;
   programSubtitle: string;
   organizationName: string;

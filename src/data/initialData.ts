@@ -31,18 +31,25 @@ export const INITIAL_INSTITUTIONS: InstitutionProfile[] = [
       hasScreensOrProjectors: true,
       hasComputersOrTablets: true,
       capacity: '35 personas por aula',
-      generalConditions: 'Zona costera de Manaure. Buena disposición de aulas, conexión intermitente, material de soporte recomendado en digital/offline.'
+      generalConditions: 'Zona costera de Manaure. Estado: Por definir / En concertación (0 sesiones programadas por purga institucional).'
     },
-    specialAlerts: []
+    specialAlerts: [
+      {
+        title: 'Estado: Por definir',
+        dates: 'Sep - Dic 2026',
+        description: '0 sesiones programadas por purga institucional en Manaure / El Pájaro.',
+        level: 'info'
+      }
+    ]
   },
   // RIOHACHA
   {
     id: 'inst-riohacha-camarones',
-    name: 'I.E. Camarones',
-    shortName: 'Camarones',
+    name: 'I.E. Luis Antonio Robles (Camarones)',
+    shortName: 'Luis Antonio Robles (Camarones)',
     municipality: 'Riohacha',
     daneCode: '244001001301',
-    campuses: ['Sede Principal Camarones'],
+    campuses: ['Sede Principal Camarones', 'I.E. Camarones'],
     shifts: ['Mañana (6:30 a.m. - 12:30 p.m.)'],
     infrastructure: {
       hasPower: true,
@@ -378,8 +385,8 @@ export const INITIAL_SESSIONS: TrainingSession[] = [
     campus: 'Sede Petsuapa',
     academicShift: 'Mañana (6:00 a.m. - 12:00 m.)',
     targetAudience: 'Estudiantes',
-    trainingType: 'Microlearning',
-    modality: 'Microlearning',
+    trainingType: 'Competencias Técnicas',
+    modality: 'Virtual',
     status: 'APROBADO',
     daysOfWeek: ['Lunes', 'Miércoles', 'Viernes'],
     datesScheduled: {
@@ -564,8 +571,8 @@ export const INITIAL_SESSIONS: TrainingSession[] = [
     campus: 'Sede Walakaly #2',
     academicShift: 'Mañana (6:00 a.m. - 12:00 m.)',
     targetAudience: 'Estudiantes',
-    trainingType: 'Microlearning',
-    modality: 'Microlearning',
+    trainingType: 'Competencias Técnicas',
+    modality: 'Virtual',
     status: 'APROBADO',
     daysOfWeek: ['Lunes', 'Miércoles', 'Viernes'],
     datesScheduled: {
@@ -724,8 +731,8 @@ export const INITIAL_SESSIONS: TrainingSession[] = [
     campus: 'Sede Puay',
     academicShift: 'Mañana (6:00 a.m. - 12:00 m.)',
     targetAudience: 'Estudiantes',
-    trainingType: 'Microlearning',
-    modality: 'Microlearning',
+    trainingType: 'Competencias Técnicas',
+    modality: 'Virtual',
     status: 'APROBADO',
     daysOfWeek: ['Lunes', 'Miércoles', 'Viernes'],
     datesScheduled: {
@@ -884,8 +891,8 @@ export const INITIAL_SESSIONS: TrainingSession[] = [
     campus: 'Sede Guarerapu #3',
     academicShift: 'Mañana (6:00 a.m. - 12:00 m.)',
     targetAudience: 'Estudiantes',
-    trainingType: 'Microlearning',
-    modality: 'Microlearning',
+    trainingType: 'Competencias Técnicas',
+    modality: 'Virtual',
     status: 'APROBADO',
     daysOfWeek: ['Lunes', 'Miércoles', 'Viernes'],
     datesScheduled: {
@@ -1616,85 +1623,4 @@ export const INITIAL_SESSIONS: TrainingSession[] = [
     infrastructureNotes: 'Salón múltiple de la institución.'
   },
 
-  // ==========================================
-  // MANAURE: EL PÁJARO
-  // ==========================================
-  {
-    id: 'sess-44',
-    itemNumber: 44,
-    municipality: 'Manaure',
-    institution: 'I.E. El Pájaro',
-    campus: 'Sede Principal El Pájaro',
-    academicShift: 'Mañana (6:00 a.m. - 12:00 m.)',
-    targetAudience: 'Estudiantes',
-    trainingType: 'Microlearning',
-    modality: 'Microlearning',
-    status: 'APROBADO',
-    daysOfWeek: ['Lunes', 'Miércoles', 'Viernes'],
-    datesScheduled: {
-      september: ['L-M-V Continuo'],
-      october: ['L-M-V Continuo'],
-      november: ['L-M-V Continuo']
-    },
-    startTime: '06:00 AM',
-    endTime: '06:15 AM',
-    durationHours: 0.3,
-    frequency: '3 veces/semana (continuo)',
-    responsible: 'The Biz Nation',
-    gradeOrCycle: 'Grados 9°, 10° y 11°',
-    observations: 'Cápsulas de aprendizaje autónomo digital.',
-    infrastructureNotes: 'Envío previo de material descargable.'
-  },
-  {
-    id: 'sess-45',
-    itemNumber: 45,
-    municipality: 'Manaure',
-    institution: 'I.E. El Pájaro',
-    campus: 'Sede Principal El Pájaro',
-    academicShift: 'Mañana (6:00 a.m. - 12:00 m.)',
-    targetAudience: 'Estudiantes',
-    trainingType: 'Competencias Técnicas',
-    modality: 'Presencial',
-    status: 'APROBADO',
-    daysOfWeek: ['Miércoles'],
-    datesScheduled: {
-      september: ['Miércoles 16', 'Miércoles 30'],
-      october: ['Miércoles 14', 'Miércoles 28'],
-      november: ['Miércoles 11', 'Miércoles 25']
-    },
-    startTime: '07:30 AM',
-    endTime: '11:30 AM',
-    durationHours: 4.0,
-    frequency: 'Quincenal',
-    responsible: 'The Biz Nation',
-    gradeOrCycle: 'Grado 9°',
-    observations: 'Zona rural costera de Manaure. Enfoque en energía solar y eólica de La Guajira.',
-    infrastructureNotes: 'Salón con ventiladores y pantalla móvil.'
-  },
-  {
-    id: 'sess-46',
-    itemNumber: 46,
-    municipality: 'Manaure',
-    institution: 'I.E. El Pájaro',
-    campus: 'Sede Principal El Pájaro',
-    academicShift: 'Mañana (6:00 a.m. - 12:00 m.)',
-    targetAudience: 'Estudiantes',
-    trainingType: 'Habilidades Blandas',
-    modality: 'Presencial',
-    status: 'APROBADO',
-    daysOfWeek: ['Viernes'],
-    datesScheduled: {
-      september: ['Viernes 18'],
-      october: ['Viernes 2', 'Viernes 16', 'Viernes 30'],
-      november: ['Viernes 13', 'Viernes 27']
-    },
-    startTime: '07:30 AM',
-    endTime: '11:30 AM',
-    durationHours: 4.0,
-    frequency: 'Quincenal',
-    responsible: 'The Biz Nation',
-    gradeOrCycle: 'Grados 10° y 11°',
-    observations: 'Desarrollo de habilidades de empleabilidad y emprendimiento.',
-    infrastructureNotes: 'Acompañamiento del facilitador de Biz Nation.'
-  }
 ];

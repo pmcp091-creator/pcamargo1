@@ -26,7 +26,8 @@ import {
 import { analyzeConflictsAndRules } from './utils/conflictChecker';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { loadHtml2Pdf } from './utils/pdfExport';
-import { initialValidatedSessions } from './data/scheduleRulesData';
+import { initialValidatedSessions, expandToIndividualSessions } from './data/scheduleRulesData';
+import { DEFAULT_BRANDING } from './data/initialData';
 import { 
   testConnection, 
   subscribeToSessions, 
@@ -42,19 +43,15 @@ import {
 } from './lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 
-// Supabase Direct REST Config
-const SUPABASE_URL = "https://qxpolbfxppgnofarfuht.supabase.co/rest/v1";
-const SUPABASE_ANON_KEY = "sb_publishable_LFMzdeo50fctTReO6qH2Mg_A11qc_6w";
-
 // Components
 import { Navbar, ActiveTab } from './components/Navbar';
-import { TableView } from './components/TableView';
+import { TableView, SessionsTableView } from './components/TableView';
 import { CalendarView } from './components/CalendarView';
 import { InstitutionsView } from './components/InstitutionsView';
 import { ValidatorView } from './components/ValidatorView';
 import { BrandingView } from './components/BrandingView';
 import { ChangeRequestsView } from './components/ChangeRequestsView';
-import { PrintView } from './components/PrintView';
+import { PrintView, PrintScheduleView } from './components/PrintView';
 import { ScheduleModal } from './components/ScheduleModal';
 import { QuickAssignModal } from './components/QuickAssignModal';
 import { BackupModal } from './components/BackupModal';
@@ -64,7 +61,8 @@ import { DashboardView } from './components/DashboardView';
 import { InstitutionalKioskView } from './components/InstitutionalKioskView';
 import { 
   WifiOff, AlertTriangle, RotateCcw, 
-  KeyRound, BarChart3, Printer, Building2, X, Loader2, CheckCircle2, Trash2
+  KeyRound, BarChart3, Printer, Building2, X, Loader2, CheckCircle2, Trash2,
+  FileSpreadsheet, Download, Check
 } from 'lucide-react';
 
 const normalizeText = (text: string = '') => {
@@ -81,17 +79,16 @@ export const deduplicateSessions = (rawSessions: TrainingSession[]): TrainingSes
   const seen = new Set<string>();
   return rawSessions.filter(s => {
     if (!s) return false;
-    // Si ya existe un registro idéntico por institución, sede, horario, población y modalidad/tipo:
     const cleanInst = (s.institution || '').trim().toLowerCase();
     const cleanCampus = (s.campus || '').trim().toLowerCase();
     const cleanPop = (s.targetAudience || s.targetPopulation || '').trim().toLowerCase();
     const cleanMod = (s.modality || '').trim().toLowerCase();
     const cleanTime = `${s.startTime}_${s.endTime}`.trim().toLowerCase();
-    // Limpiar sufijos como "(Sesión 1)" para unificar cualquier repetición que represente el mismo dato
-    const cleanTopic = (s.topic || '').replace(/\s*\(Sesión \d+\)/i, '').trim().toLowerCase();
-    const signature = `${cleanInst}_${cleanCampus}_${cleanPop}_${cleanMod}_${cleanTime}_${cleanTopic}`;
+    const cleanTopic = (s.topic || '').trim().toLowerCase();
+    const cleanDate = (s.specificDate || s.date || '').trim().toLowerCase();
+    const signature = `${cleanInst}_${cleanCampus}_${cleanPop}_${cleanMod}_${cleanTime}_${cleanTopic}_${cleanDate}`;
     if (seen.has(signature)) {
-      return false; // Descartar repetición (dejar solo 1 por cada dato)
+      return false; // Descartar repetición idéntica en la misma fecha y hora
     }
     seen.add(signature);
     return true;
@@ -101,22 +98,45 @@ export const deduplicateSessions = (rawSessions: TrainingSession[]): TrainingSes
 export default function App() {
   const isOnline = useOnlineStatus();
 
-  const STORAGE_KEY = 'cronograma_sessions_v5_single';
+  const STORAGE_KEY = 'cronograma_oficial_470_sep_dic_2026';
 
-  // App State with Persistence: exactamente 1 registro por cada dato de capacitación
+  // App State with Persistence: sesiones individuales reales de calendario (Sep - Dic 2026)
   const [sessions, setSessions] = useState<TrainingSession[]>(() => {
     try {
+      // Limpiar versiones anteriores que contenían datos antiguos o inconsistencias
+      localStorage.removeItem('cronograma_completo_sep_dic_2026');
+      localStorage.removeItem('cronograma_full_463_sep_dic_2026');
+      localStorage.removeItem('cronograma_official_sep_dic_2026');
+      localStorage.removeItem('cronograma_sessions_v8_camarones12');
+      localStorage.removeItem('cronograma_sessions_v7_calendar_sync');
+      localStorage.removeItem('cronograma_sessions_v5_single');
+      localStorage.removeItem('cronograma_sessions_v3_dedup');
+      localStorage.removeItem('cronograma_sessions_v2');
+
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (
+          Array.isArray(parsed) && 
+          parsed.length === 470 &&
+          !parsed.some(s => s.modality === 'Microlearning' || (s.institution || '').toLowerCase().includes('pajaro'))
+        ) {
+          const expanded = expandToIndividualSessions(parsed);
+          return deduplicateSessions(expanded).map((s, idx) => ({
+            ...s,
+            itemNumber: s.itemNumber || idx + 1
+          }));
+        }
+      }
       const source = initialValidatedSessions && initialValidatedSessions.length > 0 
         ? initialValidatedSessions 
         : [];
-      const cleanData = deduplicateSessions(source).map((s, idx) => ({
+      const expanded = expandToIndividualSessions(source);
+      const cleanData = deduplicateSessions(expanded).map((s, idx) => ({
         ...s,
         itemNumber: idx + 1
       }));
-      // Limpiar versiones anteriores que contenían datos triplicados
-      localStorage.removeItem('cronograma_sessions_v3_dedup');
-      localStorage.removeItem('cronograma_sessions_v2');
-      localStorage.setItem('cronograma_sessions_v5_single', JSON.stringify(cleanData));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));
       return cleanData;
     } catch (e) {
       return [];
@@ -145,6 +165,8 @@ export default function App() {
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [paperFormat, setPaperFormat] = useState<'letter' | 'legal'>('letter');
   const [paperOrientation, setPaperOrientation] = useState<'portrait' | 'landscape'>('landscape');
+  const [printScopeMode, setPrintScopeMode] = useState<'all' | 'custom'>('all');
+  const [selectedInstsForPrint, setSelectedInstsForPrint] = useState<string[]>([]);
   const [printSections, setPrintSections] = useState({
     header: true,
     dashboardKpis: true,
@@ -209,17 +231,6 @@ export default function App() {
     return null;
   });
 
-  // Función normalizadora: quita tildes, puntos, comas y prefijos comunes
-  const normalizeText = (text: string = '') => {
-    return text
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/\b(i\.?e\.?i\.?r\.?|i\.?e\.?|sede|principal|institucion|educativa)\b/gi, '')
-      .replace(/[^a-z0-9]/g, '')
-      .trim();
-  };
-
   // URL Query Reader for Direct Protected Links (?inst=DANE o ?inst=Nombre)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -272,23 +283,36 @@ export default function App() {
 
     // 3. Suscripción en Tiempo Real a la colección 'sessions' de Firestore
     let hasAttemptedSeed = false;
+    const initialClean = deduplicateSessions(initialValidatedSessions || []).map((s, idx) => ({
+      ...s,
+      itemNumber: idx + 1
+    }));
+
     const unsubscribeSessions = subscribeToSessions((firestoreSessions) => {
       if (firestoreSessions.length > 0) {
-        const clean = deduplicateSessions(firestoreSessions);
-        setSessions(clean);
+        // Filtrar localmente registros no deseados (El Pájaro o Microlearning)
+        const cleanSessions = firestoreSessions.filter(
+          s => s.modality !== 'Microlearning' &&
+               !(s.institution || '').toLowerCase().includes('pajaro') &&
+               !(s.institution || '').toLowerCase().includes('pájaro')
+        );
+
+        const clean = deduplicateSessions(cleanSessions);
+        // Si hay sesiones válidas en Firestore, utilizarlas como estado de la aplicación
+        if (clean.length > 0) {
+          setSessions(clean);
+        } else {
+          setSessions(initialClean);
+        }
         setFirebaseSyncStatus('synced');
       } else if (!hasAttemptedSeed) {
         hasAttemptedSeed = true;
-        // Si Firestore está vacío, sembramos la matriz oficial inicial
-        const initialClean = deduplicateSessions(initialValidatedSessions || []).map((s, idx) => ({
-          ...s,
-          itemNumber: idx + 1
-        }));
+        // Si Firestore está vacío, sembramos la matriz oficial inicial completa Sep - Dic 2026
         seedFirestoreIfEmpty(initialClean).then((seeded) => {
           if (seeded) {
             setFirebaseSyncStatus('synced');
           }
-        });
+        }).catch(err => console.warn('Aviso en seed inicial:', err));
       }
     }, (err) => {
       console.warn('Firestore offline o error de conexión en sesiones:', err);
@@ -435,6 +459,43 @@ export default function App() {
       return false;
     });
   }, [sessions, sessionRole, restrictedInstName, institutions]);
+
+  // CENTRALIZACIÓN DE FILTROS EN src/App.tsx (Única fuente de verdad)
+  const [selectedInstitution, setSelectedInstitution] = useState<string>(() => {
+    return restrictedInstName || 'all';
+  });
+  const [selectedMunicipality, setSelectedMunicipality] = useState<string>('all');
+  const [selectedModality, setSelectedModality] = useState<string>('all');
+  const [selectedAudience, setSelectedAudience] = useState<string>('all');
+
+  useEffect(() => {
+    if (restrictedInstName) {
+      setSelectedInstitution(restrictedInstName);
+    }
+  }, [restrictedInstName]);
+
+  // Lista única computada filteredSessions que aplica los filtros sobre las sesiones activas del Calendario
+  const filteredSessions = useMemo(() => {
+    return visibleSessions.filter(s => {
+      const matchInst = selectedInstitution === 'all' || 
+        s.institution === selectedInstitution || 
+        (s.campus && s.campus === selectedInstitution) ||
+        (selectedInstitution.toLowerCase().includes('camarones') && 
+          (s.institution.toLowerCase().includes('camarones') || (s.campus && s.campus.toLowerCase().includes('camarones'))));
+
+      const matchMun = selectedMunicipality === 'all' || 
+        s.municipality.toLowerCase() === selectedMunicipality.toLowerCase();
+
+      const matchMod = selectedModality === 'all' || 
+        s.modality.toLowerCase() === selectedModality.toLowerCase();
+
+      const matchAud = selectedAudience === 'all' || 
+        (s.targetAudience && s.targetAudience.toLowerCase().includes(selectedAudience.toLowerCase())) || 
+        (s.targetPopulation && s.targetPopulation.toLowerCase().includes(selectedAudience.toLowerCase()));
+
+      return matchInst && matchMun && matchMod && matchAud;
+    });
+  }, [visibleSessions, selectedInstitution, selectedMunicipality, selectedModality, selectedAudience]);
 
   // Rule Analysis
   const alerts = useMemo<ConflictAlert[]>(() => {
@@ -657,6 +718,37 @@ export default function App() {
     return changeRequests.filter(r => r.status === 'Pendiente').length;
   }, [changeRequests]);
 
+  const allInstitutionNames = useMemo(() => {
+    const names = new Set<string>();
+    sessions.forEach(s => { if (s.institution) names.add(s.institution); });
+    return Array.from(names).sort();
+  }, [sessions]);
+
+  useEffect(() => {
+    if (allInstitutionNames.length > 0 && selectedInstsForPrint.length === 0) {
+      setSelectedInstsForPrint([...allInstitutionNames]);
+    }
+  }, [allInstitutionNames]);
+
+  const handleExportExcel = (selectedInsts?: string[]) => {
+    const targetInsts = selectedInsts !== undefined 
+      ? selectedInsts 
+      : (selectedInstitution !== 'all' ? [selectedInstitution] : (printScopeMode === 'custom' && selectedInstsForPrint.length > 0 ? selectedInstsForPrint : undefined));
+    exportToExcel(
+      filteredSessions,
+      institutions,
+      restrictedInstName || (selectedInstitution !== 'all' ? selectedInstitution : null),
+      branding,
+      targetInsts
+    );
+  };
+
+  const handleUpdateBranding = (updated: BrandingSettings) => {
+    setBranding(updated);
+    saveBranding(updated);
+    setToastMessage('Configuración de membrete oficial guardada exitosamente.');
+  };
+
   const handleGenerateDocument = () => {
     // 1. Cerrar el modal de configuración de impresión
     setShowPrintOptionsModal(false);
@@ -766,7 +858,7 @@ export default function App() {
         onOpenNewSession={handleOpenNewSession}
         onPrint={() => setShowPrintOptionsModal(true)}
         onExportCSV={() => exportToCSV(visibleSessions, restrictedInstName)}
-        onExportExcel={() => exportToExcel(visibleSessions, institutions, restrictedInstName)}
+        onExportExcel={() => handleExportExcel()}
         onExportHTML={() => exportToHTML(visibleSessions, branding, institutions)}
         onOpenBackup={() => setIsBackupModalOpen(true)}
         onOpenGuide={() => setIsGuideModalOpen(true)}
@@ -813,7 +905,7 @@ export default function App() {
               branding={branding}
               onBack={() => setIsPrintView(false)}
               onExportHTML={() => exportToHTML(visibleSessions, branding, institutions)}
-              onExportExcel={() => exportToExcel(visibleSessions, institutions, restrictedInstName)}
+              onExportExcel={(selectedInsts) => handleExportExcel(selectedInsts)}
               paperFormat={paperFormat}
               paperOrientation={paperOrientation}
               sectionsConfig={printSections}
@@ -825,7 +917,7 @@ export default function App() {
               institutionProfile={currentInstProfile}
               sessions={visibleSessions}
               onPrint={() => setShowPrintOptionsModal(true)}
-              onExportExcel={() => exportToExcel(visibleSessions, institutions, restrictedInstName)}
+              onExportExcel={() => handleExportExcel()}
               onRequestReschedule={handleOpenRescheduleModal}
               changeRequests={changeRequests}
             />
@@ -856,22 +948,35 @@ export default function App() {
         ) : activeTab === 'dashboard' ? (
           <DashboardView sessions={sessions} institutions={institutions} />
         ) : isPrintView ? (
-          <PrintView
-            sessions={visibleSessions}
+          <PrintScheduleView
+            sessions={filteredSessions}
+            allSessions={sessions}
             branding={branding}
+            selectedInstitution={selectedInstitution}
+            selectedMunicipality={selectedMunicipality}
+            selectedModality={selectedModality}
             onBack={() => setIsPrintView(false)}
-            onExportHTML={() => exportToHTML(visibleSessions, branding, institutions)}
-            onExportExcel={() => exportToExcel(visibleSessions, institutions, restrictedInstName)}
+            onExportHTML={() => exportToHTML(filteredSessions, branding, institutions)}
+            onExportExcel={(selectedInsts) => handleExportExcel(selectedInsts)}
             paperFormat={paperFormat}
             paperOrientation={paperOrientation}
             sectionsConfig={printSections}
-            restrictedInstName={restrictedInstName}
+            restrictedInstName={restrictedInstName || (selectedInstitution !== 'all' ? selectedInstitution : null)}
           />
         ) : (
           <>
             {activeTab === 'table' && (
-              <TableView
+              <SessionsTableView
                 sessions={visibleSessions}
+                filteredSessions={filteredSessions}
+                selectedInstitution={selectedInstitution}
+                setSelectedInstitution={setSelectedInstitution}
+                selectedMunicipality={selectedMunicipality}
+                setSelectedMunicipality={setSelectedMunicipality}
+                selectedModality={selectedModality}
+                setSelectedModality={setSelectedModality}
+                selectedAudience={selectedAudience}
+                setSelectedAudience={setSelectedAudience}
                 sessionRole={sessionRole}
                 onEditSession={handleEditSession}
                 onDuplicateSession={handleDuplicateSession}
@@ -879,14 +984,23 @@ export default function App() {
                 onRequestReschedule={handleOpenRescheduleModal}
                 onOpenQuickAssign={() => setIsQuickAssignModalOpen(true)}
                 onOpenNewSession={handleOpenNewSession}
-                onExportHTML={() => exportToHTML(visibleSessions, branding)}
-                onExportExcel={() => exportToExcel(visibleSessions, institutions, restrictedInstName)}
+                onExportHTML={() => exportToHTML(filteredSessions, branding)}
+                onExportExcel={(selectedInsts) => handleExportExcel(selectedInsts)}
               />
             )}
 
             {activeTab === 'calendar' && (
               <CalendarView
                 sessions={visibleSessions}
+                filteredSessions={filteredSessions}
+                selectedInstitution={selectedInstitution}
+                setSelectedInstitution={setSelectedInstitution}
+                selectedMunicipality={selectedMunicipality}
+                setSelectedMunicipality={setSelectedMunicipality}
+                selectedModality={selectedModality}
+                setSelectedModality={setSelectedModality}
+                selectedAudience={selectedAudience}
+                setSelectedAudience={setSelectedAudience}
                 institutions={institutions}
                 sessionRole={sessionRole}
                 onEditSession={handleEditSession}
@@ -894,9 +1008,9 @@ export default function App() {
                 onDeleteSession={handleDeleteSession}
                 onDuplicateSession={handleDuplicateSession}
                 onRequestReschedule={handleOpenRescheduleModal}
-                onExportExcel={() => exportToExcel(visibleSessions, institutions, restrictedInstName)}
-                onExportCSV={() => exportToCSV(visibleSessions, restrictedInstName)}
-                onExportHTML={() => exportToHTML(visibleSessions, branding)}
+                onExportExcel={() => handleExportExcel()}
+                onExportCSV={() => exportToCSV(filteredSessions, restrictedInstName || (selectedInstitution !== 'all' ? selectedInstitution : null))}
+                onExportHTML={() => exportToHTML(filteredSessions, branding)}
                 onPrint={() => setShowPrintOptionsModal(true)}
               />
             )}
@@ -922,11 +1036,11 @@ export default function App() {
               />
             )}
 
-            {activeTab === 'branding' && sessionRole === 'admin' && (
+            {activeTab === 'branding' && (
               <BrandingView
                 branding={branding}
-                onUpdateBranding={setBranding}
-                onResetBranding={() => setBranding(resetToDefaults().branding)}
+                onUpdateBranding={handleUpdateBranding}
+                onResetBranding={() => handleUpdateBranding(DEFAULT_BRANDING)}
               />
             )}
 
@@ -941,139 +1055,303 @@ export default function App() {
         )}
       </main>
 
-      {/* Modal de Configuración y Selección para Imprenta / PDF */}
+      {/* Modal de Configuración y Selección para Imprenta / PDF / Excel */}
       {showPrintOptionsModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 no-print">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">Configuración de Impresión / PDF</h3>
-            
-            {/* Formato de Hoja */}
-            <div>
-              <label className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Formato de Hoja</label>
-              <div className="grid grid-cols-2 gap-2 mt-1.5">
-                <button
-                  type="button"
-                  onClick={() => setPaperFormat('letter')}
-                  className={`p-2.5 rounded-xl text-left text-sm transition cursor-pointer ${
-                    paperFormat === 'letter'
-                      ? 'border-2 border-amber-500 bg-amber-50 dark:bg-amber-500/20 text-slate-900 dark:text-amber-300 font-bold'
-                      : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold'
-                  }`}
-                >
-                  <span>Carta</span>
-                  <span className="block text-slate-500 dark:text-slate-400 text-xs font-normal">21.59 x 27.94 cm</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaperFormat('legal')}
-                  className={`p-2.5 rounded-xl text-left text-sm transition cursor-pointer ${
-                    paperFormat === 'legal'
-                      ? 'border-2 border-amber-500 bg-amber-50 dark:bg-amber-500/20 text-slate-900 dark:text-amber-300 font-bold'
-                      : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold'
-                  }`}
-                >
-                  <span>Oficio</span>
-                  <span className="block text-slate-500 dark:text-slate-400 text-xs font-normal">21.59 x 33.02 cm</span>
-                </button>
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 no-print animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 flex items-center justify-center text-amber-700 dark:text-amber-400 shrink-0">
+                  <Printer className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    Exportación e Impresión Oficial
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Membrete institucional (1 logo superior y 5 al pie de página)
+                  </p>
+                </div>
               </div>
+              <button
+                type="button"
+                onClick={() => setShowPrintOptionsModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Orientación */}
+            {/* Selección de Alcance de Instituciones */}
             <div>
-              <label className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Orientación</label>
-              <div className="grid grid-cols-2 gap-2 mt-1.5">
-                <button
-                  type="button"
-                  onClick={() => setPaperOrientation('portrait')}
-                  className={`p-2 rounded-xl text-sm transition cursor-pointer ${
-                    paperOrientation === 'portrait'
-                      ? 'border-2 border-amber-500 bg-amber-50 dark:bg-amber-500/20 text-slate-900 dark:text-amber-300 font-bold'
-                      : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold'
-                  }`}
-                >
-                  Vertical
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPaperOrientation('landscape')}
-                  className={`p-2 rounded-xl text-sm transition cursor-pointer ${
-                    paperOrientation === 'landscape'
-                      ? 'border-2 border-amber-500 bg-amber-50 dark:bg-amber-500/20 text-slate-900 dark:text-amber-300 font-bold'
-                      : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 font-semibold'
-                  }`}
-                >
-                  Horizontal (Gantt)
-                </button>
+              <label className="text-slate-600 dark:text-slate-300 font-bold text-xs uppercase tracking-wider block mb-1.5">
+                Instituciones a Incluir en el Documento:
+              </label>
+
+              {restrictedInstName ? (
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/60 rounded-xl text-xs text-amber-900 dark:text-amber-200">
+                  <p className="font-bold flex items-center gap-1.5">
+                    <Building2 className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    Enlace de institución exclusiva activa:
+                  </p>
+                  <p className="mt-0.5 text-amber-800 dark:text-amber-300 font-medium">
+                    {restrictedInstName} (Este reporte solo mostrará los datos de su sede).
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPrintScopeMode('all')}
+                      className={`p-2.5 rounded-xl text-left text-xs transition cursor-pointer border ${
+                        printScopeMode === 'all'
+                          ? 'border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/40 text-slate-950 dark:text-amber-300 font-bold'
+                          : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <span className="font-bold">Todas las Instituciones</span>
+                      <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-normal">
+                        12 sedes de La Guajira
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPrintScopeMode('custom')}
+                      className={`p-2.5 rounded-xl text-left text-xs transition cursor-pointer border ${
+                        printScopeMode === 'custom'
+                          ? 'border-2 border-amber-500 bg-amber-50 dark:bg-amber-950/40 text-slate-950 dark:text-amber-300 font-bold'
+                          : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                      }`}
+                    >
+                      <span className="font-bold">Escoger en concreto</span>
+                      <span className="block text-[10px] text-slate-500 dark:text-slate-400 font-normal">
+                        {selectedInstsForPrint.length} de {allInstitutionNames.length} seleccionada(s)
+                      </span>
+                    </button>
+                  </div>
+
+                  {printScopeMode === 'custom' && (
+                    <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 space-y-2 animate-in fade-in duration-150">
+                      <div className="flex items-center justify-between text-xs pb-1.5 border-b border-slate-200 dark:border-slate-700">
+                        <span className="font-bold text-slate-700 dark:text-slate-300 text-[11px]">
+                          Seleccione las sedes a exportar:
+                        </span>
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedInstsForPrint([...allInstitutionNames])}
+                            className="text-[10px] font-bold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                          >
+                            Marcar Todas
+                          </button>
+                          <span className="text-slate-300 dark:text-slate-600">•</span>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedInstsForPrint([])}
+                            className="text-[10px] font-medium text-slate-500 hover:underline cursor-pointer"
+                          >
+                            Desmarcar
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="max-h-36 overflow-y-auto space-y-1 pr-1 text-xs">
+                        {allInstitutionNames.map(inst => {
+                          const isChecked = selectedInstsForPrint.includes(inst);
+                          return (
+                            <label
+                              key={inst}
+                              className={`flex items-center gap-2 px-2 py-1 rounded-lg cursor-pointer transition text-xs ${
+                                isChecked
+                                  ? 'bg-amber-100/60 dark:bg-amber-950/40 text-slate-900 dark:text-amber-200 font-bold'
+                                  : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => {
+                                  setSelectedInstsForPrint(prev =>
+                                    prev.includes(inst)
+                                      ? prev.filter(i => i !== inst)
+                                      : [...prev, inst]
+                                  );
+                                }}
+                                className="accent-amber-500 rounded cursor-pointer"
+                              />
+                              <span className="truncate text-[11px]">{inst}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Formato de Hoja y Orientación */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div>
+                <label className="text-slate-500 dark:text-slate-400 font-bold text-[10px] uppercase tracking-wider block mb-1">
+                  Formato de Hoja
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setPaperFormat('letter')}
+                    className={`p-2 rounded-xl text-left text-xs transition cursor-pointer ${
+                      paperFormat === 'letter'
+                        ? 'border-2 border-amber-500 bg-amber-50 dark:bg-amber-500/20 text-slate-900 dark:text-amber-300 font-bold'
+                        : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium'
+                    }`}
+                  >
+                    <span>Carta</span>
+                    <span className="block text-slate-400 text-[9px] font-normal">21.59 x 27.94 cm</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaperFormat('legal')}
+                    className={`p-2 rounded-xl text-left text-xs transition cursor-pointer ${
+                      paperFormat === 'legal'
+                        ? 'border-2 border-amber-500 bg-amber-50 dark:bg-amber-500/20 text-slate-900 dark:text-amber-300 font-bold'
+                        : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium'
+                    }`}
+                  >
+                    <span>Oficio</span>
+                    <span className="block text-slate-400 text-[9px] font-normal">21.59 x 33.02 cm</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-500 dark:text-slate-400 font-bold text-[10px] uppercase tracking-wider block mb-1">
+                  Orientación
+                </label>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setPaperOrientation('portrait')}
+                    className={`p-2 rounded-xl text-center text-xs transition cursor-pointer ${
+                      paperOrientation === 'portrait'
+                        ? 'border-2 border-amber-500 bg-amber-50 dark:bg-amber-500/20 text-slate-900 dark:text-amber-300 font-bold'
+                        : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium'
+                    }`}
+                  >
+                    Vertical
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaperOrientation('landscape')}
+                    className={`p-2 rounded-xl text-center text-xs transition cursor-pointer ${
+                      paperOrientation === 'landscape'
+                        ? 'border-2 border-amber-500 bg-amber-50 dark:bg-amber-500/20 text-slate-900 dark:text-amber-300 font-bold'
+                        : 'border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium'
+                    }`}
+                  >
+                    Horizontal
+                  </button>
+                </div>
               </div>
             </div>
 
             {/* Selección de Contenido a Imprimir */}
-            <div className="border-t border-slate-200 dark:border-slate-800 pt-3 space-y-2">
-              <label className="text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-wider">Secciones a Incluir en el Documento:</label>
-              <div className="space-y-1.5">
-                <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium text-xs">
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-2.5 space-y-1.5">
+              <label className="text-slate-500 dark:text-slate-400 font-bold text-[10px] uppercase tracking-wider block">
+                Secciones en Vista Imprimible / PDF:
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-xs">
+                <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-800">
                   <input
                     type="checkbox"
                     checked={printSections.header}
                     onChange={e => setPrintSections({ ...printSections, header: e.target.checked })}
                     className="accent-amber-500 rounded"
                   />
-                  <span>Membrete Oficial y Título del Programa</span>
+                  <span>Membrete y Encabezado</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium text-xs">
+                <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-800">
                   <input
                     type="checkbox"
                     checked={printSections.dashboardKpis}
                     onChange={e => setPrintSections({ ...printSections, dashboardKpis: e.target.checked })}
                     className="accent-amber-500 rounded"
                   />
-                  <span>Métricas de Avance y Conteo de Sesiones</span>
+                  <span>Métricas y Conteo</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium text-xs">
+                <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-800">
                   <input
                     type="checkbox"
                     checked={printSections.territorialCharts}
                     onChange={e => setPrintSections({ ...printSections, territorialCharts: e.target.checked })}
                     className="accent-amber-500 rounded"
                   />
-                  <span>Gráficas Territoriales (Uribia, Riohacha, Manaure)</span>
+                  <span>Gráficas Territoriales</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium text-xs">
+                <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-800">
                   <input
                     type="checkbox"
                     checked={printSections.scheduleGrid}
                     onChange={e => setPrintSections({ ...printSections, scheduleGrid: e.target.checked })}
                     className="accent-amber-500 rounded"
                   />
-                  <span>Grilla Cronológica de Formación</span>
+                  <span>Grilla Cronológica</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium text-xs">
+                <label className="flex items-center gap-2 cursor-pointer text-slate-700 dark:text-slate-300 font-medium p-1 rounded hover:bg-slate-50 dark:hover:bg-slate-800 sm:col-span-2">
                   <input
                     type="checkbox"
                     checked={printSections.signatures}
                     onChange={e => setPrintSections({ ...printSections, signatures: e.target.checked })}
                     className="accent-amber-500 rounded"
                   />
-                  <span>Bloque de Firmas Oficiales y Aprobación</span>
+                  <span>Bloque Oficial de Firmas y Validación</span>
                 </label>
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-800">
+            {/* Botones de Acción Oficiales */}
+            <div className="flex flex-col-reverse sm:flex-row sm:items-center sm:justify-between gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setShowPrintOptionsModal(false)}
-                className="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 px-4 py-2 text-sm rounded-xl transition cursor-pointer"
+                className="text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 px-3.5 py-2 text-xs font-bold rounded-xl transition cursor-pointer text-center"
               >
                 Cancelar
               </button>
-              <button
-                type="button"
-                onClick={handleGenerateDocument}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold rounded-xl shadow-sm transition cursor-pointer"
-              >
-                <span>Generar Documento</span>
-              </button>
+
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                {/* Botón Descargar Excel */}
+                <button
+                  type="button"
+                  id="btn-modal-export-excel"
+                  onClick={() => {
+                    setShowPrintOptionsModal(false);
+                    handleExportExcel(
+                      printScopeMode === 'all' || restrictedInstName 
+                        ? undefined 
+                        : selectedInstsForPrint
+                    );
+                  }}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-emerald-800 dark:text-emerald-200 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 border border-emerald-300 dark:border-emerald-700 rounded-xl shadow-xs transition cursor-pointer"
+                  title="Descargar archivo Excel oficial con los 6 logos y las instituciones seleccionadas"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
+                  <span>Descargar Excel (.xlsx)</span>
+                </button>
+
+                {/* Botón Vista Previa / Imprimir PDF */}
+                <button
+                  type="button"
+                  id="btn-modal-print-pdf"
+                  onClick={handleGenerateDocument}
+                  className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs bg-amber-400 hover:bg-amber-500 text-slate-950 font-black rounded-xl shadow-xs transition cursor-pointer"
+                  title="Abrir vista imprimible y generar documento PDF oficial"
+                >
+                  <Printer className="w-4 h-4 text-slate-950" />
+                  <span>Imprimir / PDF</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

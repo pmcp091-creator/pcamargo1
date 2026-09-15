@@ -67,9 +67,24 @@ interface RuleGroupDef {
 }
 
 // ==============================================================================
+// FECHAS OFICIALES DE CICLO QUINCENAL (SEPTIEMBRE - DICIEMBRE 2026: 6 SESIONES POR MODALIDAD)
+// ==============================================================================
+export const MARTES_PRESENCIAL_DATES = ['2026-09-15', '2026-09-29', '2026-10-13', '2026-10-27', '2026-11-10', '2026-11-24'];
+export const MARTES_VIRTUAL_DATES = ['2026-09-22', '2026-10-06', '2026-10-20', '2026-11-03', '2026-11-17', '2026-12-01'];
+export const MIERCOLES_PRESENCIAL_DATES = ['2026-09-16', '2026-09-30', '2026-10-14', '2026-10-28', '2026-11-11', '2026-11-25'];
+export const MIERCOLES_VIRTUAL_DATES = ['2026-09-23', '2026-10-07', '2026-10-21', '2026-11-04', '2026-11-18', '2026-12-02'];
+export const JUEVES_PRESENCIAL_DATES = ['2026-09-17', '2026-10-01', '2026-10-15', '2026-10-29', '2026-11-12', '2026-11-26'];
+export const JUEVES_VIRTUAL_DATES = ['2026-09-24', '2026-10-08', '2026-10-22', '2026-11-05', '2026-11-19', '2026-12-03'];
+export const LUNES_VIRTUAL_JAIPA_DATES = ['2026-09-21', '2026-10-05', '2026-10-19', '2026-11-02', '2026-11-16', '2026-11-30'];
+export const JAIPA_EST_PRESENCIAL_DATES = ['2026-09-17', '2026-09-30', '2026-10-14', '2026-10-28', '2026-11-11', '2026-11-25'];
+export const SABADO_PRESENCIAL_DATES = ['2026-09-12', '2026-09-26', '2026-10-10', '2026-10-24', '2026-11-07', '2026-11-21'];
+export const SABADO_VIRTUAL_DATES = ['2026-09-19', '2026-10-03', '2026-10-17', '2026-10-31', '2026-11-14', '2026-11-28'];
+export const STANDARD_CYCLE_SESSION_NUMBERS = [1, 2, 3, 4, 5, 6];
+
+// ==============================================================================
 // 1. URIBIA: PETSUAPA
-// Presencial (Semanas 1, 3, 5): Jueves 17-Sep, 01-Oct, 15-Oct
-// Virtual (Semanas 2, 4, 6): Martes 22-Sep, 06-Oct, 20-Oct / Miércoles 23-Sep, 07-Oct, 21-Oct
+// Presencial (Semanas 1, 3, 5, 7, 9, 11 - Jueves): 17-Sep, 01-Oct, 15-Oct, 29-Oct, 12-Nov, 26-Nov
+// Virtual (Semanas 2, 4, 6, 8, 10, 12 - Martes / Miércoles)
 // ==============================================================================
 const petsuapaRules: RuleGroupDef[] = [
   {
@@ -87,8 +102,8 @@ const petsuapaRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Sesión presencial quincenal para docentes de Petsuapa.',
-    dates: ['2026-09-17', '2026-10-01', '2026-10-15'],
-    sessionNumbers: [1, 3, 5],
+    dates: JUEVES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -106,8 +121,8 @@ const petsuapaRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Bloque virtual de 2 horas exactas para docentes.',
-    dates: ['2026-09-22', '2026-10-06', '2026-10-20'],
-    sessionNumbers: [2, 4, 6],
+    dates: MARTES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -125,8 +140,8 @@ const petsuapaRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Formación presencial quincenal para estudiantes.',
-    dates: ['2026-09-17', '2026-10-01', '2026-10-15'],
-    sessionNumbers: [1, 3, 5],
+    dates: JUEVES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -144,8 +159,8 @@ const petsuapaRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Bloque virtual quincenal de 2 horas en Habilidades Blandas.',
-    dates: ['2026-09-22', '2026-10-06', '2026-10-20'],
-    sessionNumbers: [2, 4, 6],
+    dates: MARTES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -163,16 +178,16 @@ const petsuapaRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Bloque virtual quincenal de 2 horas en Competencias Técnicas.',
-    dates: ['2026-09-23', '2026-10-07', '2026-10-21'],
-    sessionNumbers: [2, 4, 6],
+    dates: MIERCOLES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   }
 ];
 
 // ==============================================================================
 // 2. URIBIA: GUARERAPU #3
-// Presencial (Semanas 1, 3, 5): 15-Sep, 29-Sep, 13-Oct
-// Virtual (Semanas 2, 4, 6): 22-Sep / 23-Sep / 24-Sep, 06-Oct / 07-Oct / 08-Oct, 20-Oct / 21-Oct / 22-Oct
+// Presencial (Semanas 1, 3, 5, 7, 9, 11 - Martes): 15-Sep, 29-Sep, 13-Oct, 27-Oct, 10-Nov, 24-Nov
+// Virtual (Semanas 2, 4, 6, 8, 10, 12): Martes / Miércoles / Jueves
 // ==============================================================================
 const guarerapuRules: RuleGroupDef[] = [
   {
@@ -190,8 +205,8 @@ const guarerapuRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Sesión presencial quincenal para docentes de Guarerapu.',
-    dates: ['2026-09-15', '2026-09-29', '2026-10-13'],
-    sessionNumbers: [1, 3, 5],
+    dates: MARTES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -209,8 +224,8 @@ const guarerapuRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Bloque virtual de 2 horas para docentes de Guarerapu.',
-    dates: ['2026-09-22', '2026-10-06', '2026-10-20'],
-    sessionNumbers: [2, 4, 6],
+    dates: MARTES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -228,8 +243,8 @@ const guarerapuRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Formación presencial quincenal para estudiantes.',
-    dates: ['2026-09-15', '2026-09-29', '2026-10-13'],
-    sessionNumbers: [1, 3, 5],
+    dates: MARTES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -247,8 +262,8 @@ const guarerapuRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Bloque virtual quincenal de 2 horas de Competencias Técnicas.',
-    dates: ['2026-09-23', '2026-10-07', '2026-10-21'],
-    sessionNumbers: [2, 4, 6],
+    dates: MIERCOLES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -266,8 +281,8 @@ const guarerapuRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Bloque virtual quincenal de 2 horas de Habilidades Blandas.',
-    dates: ['2026-09-24', '2026-10-08', '2026-10-22'],
-    sessionNumbers: [2, 4, 6],
+    dates: JUEVES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   }
 ];
@@ -275,8 +290,8 @@ const guarerapuRules: RuleGroupDef[] = [
 // ==============================================================================
 // 3. URIBIA: PUAY
 // Corrección de horario: Docentes Presencial 02:30 PM - 05:30 PM (Martes quincenal desde 15-Sep)
-// Presencial (Semanas 1, 3, 5): 15-Sep, 29-Sep, 13-Oct
-// Virtual (Semanas 2, 4, 6): 22-Sep / 23-Sep, 06-Oct / 07-Oct, 20-Oct / 21-Oct
+// Presencial (Semanas 1, 3, 5, 7, 9, 11): 15-Sep, 29-Sep, 13-Oct, 27-Oct, 10-Nov, 24-Nov
+// Virtual (Semanas 2, 4, 6, 8, 10, 12): Martes / Miércoles
 // ==============================================================================
 const puayRules: RuleGroupDef[] = [
   {
@@ -294,8 +309,8 @@ const puayRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Docentes se trasladan al casco urbano para formación (02:30 PM - 05:30 PM).',
-    dates: ['2026-09-15', '2026-09-29', '2026-10-13'],
-    sessionNumbers: [1, 3, 5],
+    dates: MARTES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -313,8 +328,8 @@ const puayRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Bloque virtual quincenal de 2 horas para docentes.',
-    dates: ['2026-09-22', '2026-10-06', '2026-10-20'],
-    sessionNumbers: [2, 4, 6],
+    dates: MARTES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -332,8 +347,8 @@ const puayRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Formación presencial quincenal en sede Puay.',
-    dates: ['2026-09-15', '2026-09-29', '2026-10-13'],
-    sessionNumbers: [1, 3, 5],
+    dates: MARTES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -351,8 +366,8 @@ const puayRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Bloque virtual de 2 horas en Competencias Técnicas.',
-    dates: ['2026-09-23', '2026-10-07', '2026-10-21'],
-    sessionNumbers: [2, 4, 6],
+    dates: MIERCOLES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -370,8 +385,8 @@ const puayRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Bloque virtual de 2 horas en Habilidades Blandas.',
-    dates: ['2026-09-23', '2026-10-07', '2026-10-21'],
-    sessionNumbers: [2, 4, 6],
+    dates: MIERCOLES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   }
 ];
@@ -379,8 +394,8 @@ const puayRules: RuleGroupDef[] = [
 // ==============================================================================
 // 4. URIBIA: WALAKALY #2
 // Corrección de horario: Docentes Presencial 02:30 PM - 05:30 PM (Miércoles quincenal desde 16-Sep)
-// Presencial (Semanas 1, 3, 5): 16-Sep, 30-Sep, 14-Oct
-// Virtual (Semanas 2, 4, 6): 22-Sep, 06-Oct, 20-Oct
+// Presencial (Semanas 1, 3, 5, 7, 9, 11): 16-Sep, 30-Sep, 14-Oct, 28-Oct, 11-Nov, 25-Nov
+// Virtual (Semanas 2, 4, 6, 8, 10, 12): Martes
 // ==============================================================================
 const walakalyRules: RuleGroupDef[] = [
   {
@@ -398,8 +413,8 @@ const walakalyRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Formación presencial de docentes en casco urbano de Uribia (02:30 PM - 05:30 PM).',
-    dates: ['2026-09-16', '2026-09-30', '2026-10-14'],
-    sessionNumbers: [1, 3, 5],
+    dates: MIERCOLES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -417,8 +432,8 @@ const walakalyRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Bloque virtual quincenal de 2 horas para docentes.',
-    dates: ['2026-09-22', '2026-10-06', '2026-10-20'],
-    sessionNumbers: [2, 4, 6],
+    dates: MARTES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -436,8 +451,8 @@ const walakalyRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Formación presencial quincenal de 4 horas en sede Walakaly #2.',
-    dates: ['2026-09-16', '2026-09-30', '2026-10-14'],
-    sessionNumbers: [1, 3, 5],
+    dates: MIERCOLES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -455,8 +470,8 @@ const walakalyRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Bloque virtual de 2 horas en Habilidades Blandas.',
-    dates: ['2026-09-22', '2026-10-06', '2026-10-20'],
-    sessionNumbers: [2, 4, 6],
+    dates: MARTES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -474,8 +489,8 @@ const walakalyRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Bloque virtual de 2 horas en Competencias Técnicas.',
-    dates: ['2026-09-22', '2026-10-06', '2026-10-20'],
-    sessionNumbers: [2, 4, 6],
+    dates: MARTES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   }
 ];
@@ -483,8 +498,8 @@ const walakalyRules: RuleGroupDef[] = [
 // ==============================================================================
 // 5. URIBIA: APAIMANA
 // Corrección de horario: Docentes Presencial 01:00 PM - 04:30 PM (Jueves quincenal desde 17-Sep)
-// Presencial (Semanas 1, 3, 5): 17-Sep, 01-Oct, 15-Oct
-// Virtual (Semanas 2, 4, 6): 22-Sep / 24-Sep, 06-Oct / 08-Oct, 20-Oct / 22-Oct
+// Presencial (Semanas 1, 3, 5, 7, 9, 11): 17-Sep, 01-Oct, 15-Oct, 29-Oct, 12-Nov, 26-Nov
+// Virtual (Semanas 2, 4, 6, 8, 10, 12): Martes / Jueves
 // ==============================================================================
 const apaimanaRules: RuleGroupDef[] = [
   {
@@ -502,8 +517,8 @@ const apaimanaRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Formación presencial quincenal en jornada de la tarde (01:00 PM - 04:30 PM).',
-    dates: ['2026-09-17', '2026-10-01', '2026-10-15'],
-    sessionNumbers: [1, 3, 5],
+    dates: JUEVES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -521,8 +536,8 @@ const apaimanaRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Bloque virtual quincenal de 2 horas para docentes.',
-    dates: ['2026-09-22', '2026-10-06', '2026-10-20'],
-    sessionNumbers: [2, 4, 6],
+    dates: MARTES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -540,8 +555,8 @@ const apaimanaRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Formación presencial quincenal los jueves.',
-    dates: ['2026-09-17', '2026-10-01', '2026-10-15'],
-    sessionNumbers: [1, 3, 5],
+    dates: JUEVES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -559,16 +574,16 @@ const apaimanaRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Bloque virtual quincenal de 2 horas en Habilidades Blandas.',
-    dates: ['2026-09-24', '2026-10-08', '2026-10-22'],
-    sessionNumbers: [2, 4, 6],
+    dates: JUEVES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   }
 ];
 
 // ==============================================================================
 // 6. URIBIA: JAIPA
-// Presencial (Semanas 1, 3, 5): 16-Sep (Doc) / 17-Sep (Est), 30-Sep, 14-Oct
-// Virtual (Semanas 2, 4, 6): 21-Sep (Doc) / 23-Sep (Est), 05-Oct / 07-Oct, 19-Oct / 21-Oct
+// Presencial (Semanas 1, 3, 5, 7, 9, 11): 16-Sep (Doc) / 17-Sep (Est), 30-Sep, 14-Oct, 28-Oct, 11-Nov, 25-Nov
+// Virtual (Semanas 2, 4, 6, 8, 10, 12): 21-Sep (Doc), 23-Sep (Est), etc.
 // ==============================================================================
 const jaipaRules: RuleGroupDef[] = [
   {
@@ -586,8 +601,8 @@ const jaipaRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Formación presencial quincenal para docentes de Jaipa en casco urbano.',
-    dates: ['2026-09-16', '2026-09-30', '2026-10-14'],
-    sessionNumbers: [1, 3, 5],
+    dates: MIERCOLES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -605,8 +620,8 @@ const jaipaRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Bloque virtual quincenal de 2 horas para docentes.',
-    dates: ['2026-09-21', '2026-10-05', '2026-10-19'],
-    sessionNumbers: [2, 4, 6],
+    dates: LUNES_VIRTUAL_JAIPA_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -623,9 +638,9 @@ const jaipaRules: RuleGroupDef[] = [
     endTime: '11:00 AM',
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
-    observations: 'Inicia presencial Jueves 17-Sep y luego Miércoles cada 15 días (30-Sep y 14-Oct).',
-    dates: ['2026-09-17', '2026-09-30', '2026-10-14'],
-    sessionNumbers: [1, 3, 5],
+    observations: 'Inicia presencial Jueves 17-Sep y luego Miércoles cada 15 días (30-Sep, 14-Oct, 28-Oct, 11-Nov, 25-Nov).',
+    dates: JAIPA_EST_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -643,8 +658,8 @@ const jaipaRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Bloque virtual integrado quincenal de 2 horas.',
-    dates: ['2026-09-23', '2026-10-07', '2026-10-21'],
-    sessionNumbers: [2, 4, 6],
+    dates: MIERCOLES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   }
 ];
@@ -652,8 +667,8 @@ const jaipaRules: RuleGroupDef[] = [
 // ==============================================================================
 // 7. URIBIA: YOTOJOROIN
 // Corrección de horario: Grado 9 Virtual HB 10:15 AM - 12:15 PM (Martes quincenal desde 22-Sep)
-// Presencial (Semanas 1, 3, 5): 16-Sep (Doc) / 17-Sep (Est), 30-Sep (Doc) / 01-Oct (Est), 14-Oct (Doc) / 15-Oct (Est)
-// Virtual (Semanas 2, 4, 6): 22-Sep / 24-Sep, 06-Oct / 08-Oct, 20-Oct / 22-Oct
+// Presencial (Semanas 1, 3, 5, 7, 9, 11): 16-Sep (Doc) / 17-Sep (Est), 30-Sep (Doc) / 01-Oct (Est), etc.
+// Virtual (Semanas 2, 4, 6, 8, 10, 12): Martes / Jueves
 // ==============================================================================
 const yotojoroinRules: RuleGroupDef[] = [
   {
@@ -671,8 +686,8 @@ const yotojoroinRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Formación presencial quincenal para docentes de Yotojoroin.',
-    dates: ['2026-09-16', '2026-09-30', '2026-10-14'],
-    sessionNumbers: [1, 3, 5],
+    dates: MIERCOLES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -690,8 +705,8 @@ const yotojoroinRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Docentes',
     observations: 'Bloque virtual quincenal de 2 horas para docentes.',
-    dates: ['2026-09-22', '2026-10-06', '2026-10-20'],
-    sessionNumbers: [2, 4, 6],
+    dates: MARTES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -709,8 +724,8 @@ const yotojoroinRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
     observations: 'Formación presencial quincenal de 4 horas.',
-    dates: ['2026-09-17', '2026-10-01', '2026-10-15'],
-    sessionNumbers: [1, 3, 5],
+    dates: JUEVES_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -728,8 +743,8 @@ const yotojoroinRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grado 9°',
     observations: 'Bloque virtual de 2 horas (Grado 9 HB Virtual Martes 10:15 AM - 12:15 PM quincenal desde 22-Sep).',
-    dates: ['2026-09-22', '2026-10-06', '2026-10-20'],
-    sessionNumbers: [2, 4, 6],
+    dates: MARTES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -747,17 +762,17 @@ const yotojoroinRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 10° y 11°',
     observations: 'Bloque virtual quincenal de 2 horas para grados 10 y 11.',
-    dates: ['2026-09-24', '2026-10-08', '2026-10-22'],
-    sessionNumbers: [2, 4, 6],
+    dates: JUEVES_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   }
 ];
 
 // ==============================================================================
 // 8. RIOHACHA: DENZIL ESCOLAR SABATINO
-// Sábados desde 12-Sep presencial / 19-Sep virtual (alternando quincenal, 6 sesiones)
-// Presencial (Semanas 1, 3, 5): 12-Sep, 26-Sep, 10-Oct
-// Virtual (Semanas 2, 4, 6): 19-Sep, 03-Oct, 17-Oct
+// Sábados desde 12-Sep presencial / 19-Sep virtual (alternando quincenal, 6 sesiones de cada tipo)
+// Presencial: 12-Sep, 26-Sep, 10-Oct, 24-Oct, 07-Nov, 21-Nov
+// Virtual: 19-Sep, 03-Oct, 17-Oct, 31-Oct, 14-Nov, 28-Nov
 // ==============================================================================
 const denzilSabatinoRules: RuleGroupDef[] = [
   {
@@ -775,8 +790,8 @@ const denzilSabatinoRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Ciclos 4, 5 y 6',
     observations: 'Formación presencial sabatina quincenal de Competencias Técnicas desde el 12-Sep.',
-    dates: ['2026-09-12', '2026-09-26', '2026-10-10'],
-    sessionNumbers: [1, 3, 5],
+    dates: SABADO_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -794,8 +809,8 @@ const denzilSabatinoRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Ciclos 4, 5 y 6',
     observations: 'Formación presencial sabatina quincenal de Habilidades Blandas desde el 12-Sep.',
-    dates: ['2026-09-12', '2026-09-26', '2026-10-10'],
-    sessionNumbers: [1, 3, 5],
+    dates: SABADO_PRESENCIAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -813,8 +828,8 @@ const denzilSabatinoRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Ciclos 4, 5 y 6',
     observations: 'Bloque virtual quincenal sabatino de 2 horas en Competencias Técnicas desde el 19-Sep.',
-    dates: ['2026-09-19', '2026-10-03', '2026-10-17'],
-    sessionNumbers: [2, 4, 6],
+    dates: SABADO_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   },
   {
@@ -832,17 +847,19 @@ const denzilSabatinoRules: RuleGroupDef[] = [
     frequency: 'Quincenal',
     gradeOrCycle: 'Ciclos 4, 5 y 6',
     observations: 'Bloque virtual quincenal sabatino de 2 horas en Habilidades Blandas desde el 19-Sep.',
-    dates: ['2026-09-19', '2026-10-03', '2026-10-17'],
-    sessionNumbers: [2, 4, 6],
+    dates: SABADO_VIRTUAL_DATES,
+    sessionNumbers: STANDARD_CYCLE_SESSION_NUMBERS,
     status: 'Programada'
   }
 ];
 
 // ==============================================================================
 // 9. RIOHACHA: LUIS ANTONIO ROBLES (CAMARONES)
-// Presencial: Miércoles desde 16-Sep (16-Sep, 30-Sep, 14-Oct)
-// Virtual: Jueves desde 24-Sep (24-Sep, 08-Oct, 22-Oct)
-// Total: 6 sesiones quincenales alternadas
+// Presencial: 6 sesiones quincenales los miércoles de 08:00 AM a 10:00 AM iniciando el 16-Sep-2026
+// (16-Sep, 30-Sep, 14-Oct, 28-Oct, 11-Nov, 25-Nov)
+// Virtual: 6 sesiones quincenales de 2 horas los jueves de 09:00 AM a 11:00 AM iniciando el 24-Sep-2026
+// (24-Sep, 08-Oct, 22-Oct, 05-Nov, 19-Nov, 03-Dic)
+// Total: 12 sesiones completas para Estudiantes en Competencias Técnicas
 // ==============================================================================
 const camaronesRules: RuleGroupDef[] = [
   {
@@ -859,9 +876,9 @@ const camaronesRules: RuleGroupDef[] = [
     endTime: '10:00 AM',
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
-    observations: 'Formación presencial quincenal en sede Luis Antonio Robles (Camarones) los miércoles.',
-    dates: ['2026-09-16', '2026-09-30', '2026-10-14'],
-    sessionNumbers: [1, 3, 5],
+    observations: 'Formación presencial quincenal en sede Luis Antonio Robles (Camarones) los miércoles de 08:00 AM a 10:00 AM.',
+    dates: ['2026-09-16', '2026-09-30', '2026-10-14', '2026-10-28', '2026-11-11', '2026-11-25'],
+    sessionNumbers: [1, 2, 3, 4, 5, 6],
     status: 'Programada'
   },
   {
@@ -878,49 +895,372 @@ const camaronesRules: RuleGroupDef[] = [
     endTime: '11:00 AM',
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
-    observations: 'Bloque virtual de 2 horas en Competencias Técnicas los jueves.',
-    dates: ['2026-09-24', '2026-10-08', '2026-10-22'],
-    sessionNumbers: [2, 4, 6],
+    observations: 'Bloque virtual quincenal de 2 horas en Competencias Técnicas los jueves de 09:00 AM a 11:00 AM.',
+    dates: ['2026-09-24', '2026-10-08', '2026-10-22', '2026-11-05', '2026-11-19', '2026-12-03'],
+    sessionNumbers: [1, 2, 3, 4, 5, 6],
     status: 'Programada'
+  }
+];
+
+// Explicit export of the 12 complete individual sessions for I.E. Luis Antonio Robles (Camarones)
+export const camarones12Sessions: TrainingSession[] = [
+  // 6 Sesiones Presenciales Quincenales (Miércoles 08:00 AM - 10:00 AM)
+  {
+    id: 'sess_camarones-est-pres-ct_2026-09-16',
+    itemNumber: 1,
+    municipality: 'Riohacha',
+    institution: 'I.E. Luis Antonio Robles (Camarones)',
+    campus: 'Sede Principal Camarones',
+    academicShift: 'Mañana (8:00 a.m. - 10:00 a.m.)',
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Competencias Técnicas',
+    topic: 'Competencias Técnicas Presencial - Transición Energética',
+    modality: 'Presencial',
+    status: 'Programada',
+    daysOfWeek: ['Miércoles'],
+    datesScheduled: { september: ['Miércoles 16'] },
+    specificDate: '2026-09-16',
+    date: '2026-09-16',
+    specificDates: ['2026-09-16'],
+    startTime: '08:00 AM',
+    endTime: '10:00 AM',
+    durationHours: 2,
+    frequency: 'Quincenal',
+    responsible: 'The Biz Nation',
+    gradeOrCycle: 'Grados 9°, 10° y 11°',
+    observations: 'Formación presencial quincenal en sede Luis Antonio Robles (Camarones) los miércoles de 08:00 AM a 10:00 AM. (Sesión 1)',
+    infrastructureNotes: 'Parametrización validada (Quincenal). Horario: 08:00 AM - 10:00 AM.',
+    lastUpdated: '2026-09-14'
+  },
+  {
+    id: 'sess_camarones-est-pres-ct_2026-09-30',
+    itemNumber: 2,
+    municipality: 'Riohacha',
+    institution: 'I.E. Luis Antonio Robles (Camarones)',
+    campus: 'Sede Principal Camarones',
+    academicShift: 'Mañana (8:00 a.m. - 10:00 a.m.)',
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Competencias Técnicas',
+    topic: 'Competencias Técnicas Presencial - Transición Energética',
+    modality: 'Presencial',
+    status: 'Programada',
+    daysOfWeek: ['Miércoles'],
+    datesScheduled: { september: ['Miércoles 30'] },
+    specificDate: '2026-09-30',
+    date: '2026-09-30',
+    specificDates: ['2026-09-30'],
+    startTime: '08:00 AM',
+    endTime: '10:00 AM',
+    durationHours: 2,
+    frequency: 'Quincenal',
+    responsible: 'The Biz Nation',
+    gradeOrCycle: 'Grados 9°, 10° y 11°',
+    observations: 'Formación presencial quincenal en sede Luis Antonio Robles (Camarones) los miércoles de 08:00 AM a 10:00 AM. (Sesión 2)',
+    infrastructureNotes: 'Parametrización validada (Quincenal). Horario: 08:00 AM - 10:00 AM.',
+    lastUpdated: '2026-09-14'
+  },
+  {
+    id: 'sess_camarones-est-pres-ct_2026-10-14',
+    itemNumber: 3,
+    municipality: 'Riohacha',
+    institution: 'I.E. Luis Antonio Robles (Camarones)',
+    campus: 'Sede Principal Camarones',
+    academicShift: 'Mañana (8:00 a.m. - 10:00 a.m.)',
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Competencias Técnicas',
+    topic: 'Competencias Técnicas Presencial - Transición Energética',
+    modality: 'Presencial',
+    status: 'Programada',
+    daysOfWeek: ['Miércoles'],
+    datesScheduled: { october: ['Miércoles 14'] },
+    specificDate: '2026-10-14',
+    date: '2026-10-14',
+    specificDates: ['2026-10-14'],
+    startTime: '08:00 AM',
+    endTime: '10:00 AM',
+    durationHours: 2,
+    frequency: 'Quincenal',
+    responsible: 'The Biz Nation',
+    gradeOrCycle: 'Grados 9°, 10° y 11°',
+    observations: 'Formación presencial quincenal en sede Luis Antonio Robles (Camarones) los miércoles de 08:00 AM a 10:00 AM. (Sesión 3)',
+    infrastructureNotes: 'Parametrización validada (Quincenal). Horario: 08:00 AM - 10:00 AM.',
+    lastUpdated: '2026-09-14'
+  },
+  {
+    id: 'sess_camarones-est-pres-ct_2026-10-28',
+    itemNumber: 4,
+    municipality: 'Riohacha',
+    institution: 'I.E. Luis Antonio Robles (Camarones)',
+    campus: 'Sede Principal Camarones',
+    academicShift: 'Mañana (8:00 a.m. - 10:00 a.m.)',
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Competencias Técnicas',
+    topic: 'Competencias Técnicas Presencial - Transición Energética',
+    modality: 'Presencial',
+    status: 'Programada',
+    daysOfWeek: ['Miércoles'],
+    datesScheduled: { october: ['Miércoles 28'] },
+    specificDate: '2026-10-28',
+    date: '2026-10-28',
+    specificDates: ['2026-10-28'],
+    startTime: '08:00 AM',
+    endTime: '10:00 AM',
+    durationHours: 2,
+    frequency: 'Quincenal',
+    responsible: 'The Biz Nation',
+    gradeOrCycle: 'Grados 9°, 10° y 11°',
+    observations: 'Formación presencial quincenal en sede Luis Antonio Robles (Camarones) los miércoles de 08:00 AM a 10:00 AM. (Sesión 4)',
+    infrastructureNotes: 'Parametrización validada (Quincenal). Horario: 08:00 AM - 10:00 AM.',
+    lastUpdated: '2026-09-14'
+  },
+  {
+    id: 'sess_camarones-est-pres-ct_2026-11-11',
+    itemNumber: 5,
+    municipality: 'Riohacha',
+    institution: 'I.E. Luis Antonio Robles (Camarones)',
+    campus: 'Sede Principal Camarones',
+    academicShift: 'Mañana (8:00 a.m. - 10:00 a.m.)',
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Competencias Técnicas',
+    topic: 'Competencias Técnicas Presencial - Transición Energética',
+    modality: 'Presencial',
+    status: 'Programada',
+    daysOfWeek: ['Miércoles'],
+    datesScheduled: { november: ['Miércoles 11'] },
+    specificDate: '2026-11-11',
+    date: '2026-11-11',
+    specificDates: ['2026-11-11'],
+    startTime: '08:00 AM',
+    endTime: '10:00 AM',
+    durationHours: 2,
+    frequency: 'Quincenal',
+    responsible: 'The Biz Nation',
+    gradeOrCycle: 'Grados 9°, 10° y 11°',
+    observations: 'Formación presencial quincenal en sede Luis Antonio Robles (Camarones) los miércoles de 08:00 AM a 10:00 AM. (Sesión 5)',
+    infrastructureNotes: 'Parametrización validada (Quincenal). Horario: 08:00 AM - 10:00 AM.',
+    lastUpdated: '2026-09-14'
+  },
+  {
+    id: 'sess_camarones-est-pres-ct_2026-11-25',
+    itemNumber: 6,
+    municipality: 'Riohacha',
+    institution: 'I.E. Luis Antonio Robles (Camarones)',
+    campus: 'Sede Principal Camarones',
+    academicShift: 'Mañana (8:00 a.m. - 10:00 a.m.)',
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Competencias Técnicas',
+    topic: 'Competencias Técnicas Presencial - Transición Energética',
+    modality: 'Presencial',
+    status: 'Programada',
+    daysOfWeek: ['Miércoles'],
+    datesScheduled: { november: ['Miércoles 25'] },
+    specificDate: '2026-11-25',
+    date: '2026-11-25',
+    specificDates: ['2026-11-25'],
+    startTime: '08:00 AM',
+    endTime: '10:00 AM',
+    durationHours: 2,
+    frequency: 'Quincenal',
+    responsible: 'The Biz Nation',
+    gradeOrCycle: 'Grados 9°, 10° y 11°',
+    observations: 'Formación presencial quincenal en sede Luis Antonio Robles (Camarones) los miércoles de 08:00 AM a 10:00 AM. (Sesión 6)',
+    infrastructureNotes: 'Parametrización validada (Quincenal). Horario: 08:00 AM - 10:00 AM.',
+    lastUpdated: '2026-09-14'
+  },
+
+  // 6 Sesiones Virtuales Quincenales (Jueves 09:00 AM - 11:00 AM)
+  {
+    id: 'sess_camarones-est-virt-ct_2026-09-24',
+    itemNumber: 7,
+    municipality: 'Riohacha',
+    institution: 'I.E. Luis Antonio Robles (Camarones)',
+    campus: 'Sede Principal Camarones',
+    academicShift: 'Mañana (9:00 a.m. - 11:00 a.m.)',
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Competencias Técnicas',
+    topic: 'Competencias Técnicas Virtual',
+    modality: 'Virtual',
+    status: 'Programada',
+    daysOfWeek: ['Jueves'],
+    datesScheduled: { september: ['Jueves 24'] },
+    specificDate: '2026-09-24',
+    date: '2026-09-24',
+    specificDates: ['2026-09-24'],
+    startTime: '09:00 AM',
+    endTime: '11:00 AM',
+    durationHours: 2,
+    frequency: 'Quincenal',
+    responsible: 'The Biz Nation',
+    gradeOrCycle: 'Grados 9°, 10° y 11°',
+    observations: 'Bloque virtual quincenal de 2 horas en Competencias Técnicas los jueves de 09:00 AM a 11:00 AM. (Sesión 1)',
+    infrastructureNotes: 'Parametrización validada (Quincenal). Horario: 09:00 AM - 11:00 AM.',
+    lastUpdated: '2026-09-14'
+  },
+  {
+    id: 'sess_camarones-est-virt-ct_2026-10-08',
+    itemNumber: 8,
+    municipality: 'Riohacha',
+    institution: 'I.E. Luis Antonio Robles (Camarones)',
+    campus: 'Sede Principal Camarones',
+    academicShift: 'Mañana (9:00 a.m. - 11:00 a.m.)',
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Competencias Técnicas',
+    topic: 'Competencias Técnicas Virtual',
+    modality: 'Virtual',
+    status: 'Programada',
+    daysOfWeek: ['Jueves'],
+    datesScheduled: { october: ['Jueves 08'] },
+    specificDate: '2026-10-08',
+    date: '2026-10-08',
+    specificDates: ['2026-10-08'],
+    startTime: '09:00 AM',
+    endTime: '11:00 AM',
+    durationHours: 2,
+    frequency: 'Quincenal',
+    responsible: 'The Biz Nation',
+    gradeOrCycle: 'Grados 9°, 10° y 11°',
+    observations: 'Bloque virtual quincenal de 2 horas en Competencias Técnicas los jueves de 09:00 AM a 11:00 AM. (Sesión 2)',
+    infrastructureNotes: 'Parametrización validada (Quincenal). Horario: 09:00 AM - 11:00 AM.',
+    lastUpdated: '2026-09-14'
+  },
+  {
+    id: 'sess_camarones-est-virt-ct_2026-10-22',
+    itemNumber: 9,
+    municipality: 'Riohacha',
+    institution: 'I.E. Luis Antonio Robles (Camarones)',
+    campus: 'Sede Principal Camarones',
+    academicShift: 'Mañana (9:00 a.m. - 11:00 a.m.)',
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Competencias Técnicas',
+    topic: 'Competencias Técnicas Virtual',
+    modality: 'Virtual',
+    status: 'Programada',
+    daysOfWeek: ['Jueves'],
+    datesScheduled: { october: ['Jueves 22'] },
+    specificDate: '2026-10-22',
+    date: '2026-10-22',
+    specificDates: ['2026-10-22'],
+    startTime: '09:00 AM',
+    endTime: '11:00 AM',
+    durationHours: 2,
+    frequency: 'Quincenal',
+    responsible: 'The Biz Nation',
+    gradeOrCycle: 'Grados 9°, 10° y 11°',
+    observations: 'Bloque virtual quincenal de 2 horas en Competencias Técnicas los jueves de 09:00 AM a 11:00 AM. (Sesión 3)',
+    infrastructureNotes: 'Parametrización validada (Quincenal). Horario: 09:00 AM - 11:00 AM.',
+    lastUpdated: '2026-09-14'
+  },
+  {
+    id: 'sess_camarones-est-virt-ct_2026-11-05',
+    itemNumber: 10,
+    municipality: 'Riohacha',
+    institution: 'I.E. Luis Antonio Robles (Camarones)',
+    campus: 'Sede Principal Camarones',
+    academicShift: 'Mañana (9:00 a.m. - 11:00 a.m.)',
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Competencias Técnicas',
+    topic: 'Competencias Técnicas Virtual',
+    modality: 'Virtual',
+    status: 'Programada',
+    daysOfWeek: ['Jueves'],
+    datesScheduled: { november: ['Jueves 05'] },
+    specificDate: '2026-11-05',
+    date: '2026-11-05',
+    specificDates: ['2026-11-05'],
+    startTime: '09:00 AM',
+    endTime: '11:00 AM',
+    durationHours: 2,
+    frequency: 'Quincenal',
+    responsible: 'The Biz Nation',
+    gradeOrCycle: 'Grados 9°, 10° y 11°',
+    observations: 'Bloque virtual quincenal de 2 horas en Competencias Técnicas los jueves de 09:00 AM a 11:00 AM. (Sesión 4)',
+    infrastructureNotes: 'Parametrización validada (Quincenal). Horario: 09:00 AM - 11:00 AM.',
+    lastUpdated: '2026-09-14'
+  },
+  {
+    id: 'sess_camarones-est-virt-ct_2026-11-19',
+    itemNumber: 11,
+    municipality: 'Riohacha',
+    institution: 'I.E. Luis Antonio Robles (Camarones)',
+    campus: 'Sede Principal Camarones',
+    academicShift: 'Mañana (9:00 a.m. - 11:00 a.m.)',
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Competencias Técnicas',
+    topic: 'Competencias Técnicas Virtual',
+    modality: 'Virtual',
+    status: 'Programada',
+    daysOfWeek: ['Jueves'],
+    datesScheduled: { november: ['Jueves 19'] },
+    specificDate: '2026-11-19',
+    date: '2026-11-19',
+    specificDates: ['2026-11-19'],
+    startTime: '09:00 AM',
+    endTime: '11:00 AM',
+    durationHours: 2,
+    frequency: 'Quincenal',
+    responsible: 'The Biz Nation',
+    gradeOrCycle: 'Grados 9°, 10° y 11°',
+    observations: 'Bloque virtual quincenal de 2 horas en Competencias Técnicas los jueves de 09:00 AM a 11:00 AM. (Sesión 5)',
+    infrastructureNotes: 'Parametrización validada (Quincenal). Horario: 09:00 AM - 11:00 AM.',
+    lastUpdated: '2026-09-14'
+  },
+  {
+    id: 'sess_camarones-est-virt-ct_2026-12-03',
+    itemNumber: 12,
+    municipality: 'Riohacha',
+    institution: 'I.E. Luis Antonio Robles (Camarones)',
+    campus: 'Sede Principal Camarones',
+    academicShift: 'Mañana (9:00 a.m. - 11:00 a.m.)',
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Competencias Técnicas',
+    topic: 'Competencias Técnicas Virtual',
+    modality: 'Virtual',
+    status: 'Programada',
+    daysOfWeek: ['Jueves'],
+    datesScheduled: { december: ['Jueves 03'] },
+    specificDate: '2026-12-03',
+    date: '2026-12-03',
+    specificDates: ['2026-12-03'],
+    startTime: '09:00 AM',
+    endTime: '11:00 AM',
+    durationHours: 2,
+    frequency: 'Quincenal',
+    responsible: 'The Biz Nation',
+    gradeOrCycle: 'Grados 9°, 10° y 11°',
+    observations: 'Bloque virtual quincenal de 2 horas en Competencias Técnicas los jueves de 09:00 AM a 11:00 AM. (Sesión 6)',
+    infrastructureNotes: 'Parametrización validada (Quincenal). Horario: 09:00 AM - 11:00 AM.',
+    lastUpdated: '2026-09-14'
   }
 ];
 
 // ==============================================================================
 // 10. MANAURE: EL PÁJARO
-// Estado 'Pendiente por definir'
+// Estado 'POR CONCERTAR' / Pendiente por definir (0 sesiones programadas por purga institucional)
 // ==============================================================================
-const pajaroRules: RuleGroupDef[] = [
-  {
-    key: 'pajaro-est-pres-ct',
-    municipality: 'Manaure',
-    institution: 'I.E. El Pájaro',
-    campus: 'Sede Principal El Pájaro',
-    academicShift: 'Mañana (8:00 a.m. - 12:00 m.)',
-    targetPopulation: 'Estudiantes',
-    trainingType: 'Competencias Técnicas',
-    topic: 'Competencias Técnicas Presencial - Pendiente por definir',
-    modality: 'Presencial',
-    startTime: '08:00 AM',
-    endTime: '12:00 PM',
-    frequency: 'Por Definir',
-    gradeOrCycle: 'Grados 9°, 10° y 11°',
-    observations: 'Zona rural marítima de Manaure. Estado: Pendiente por definir.',
-    dates: ['2026-09-16'],
-    sessionNumbers: [1],
-    status: 'Pendiente por definir'
-  }
-];
+const pajaroRules: RuleGroupDef[] = [];
 
 // ==============================================================================
 // 11. EXCEPCIÓN CONTINUA SEMANAL: DENZIL ESCOLAR MEGA COLEGIO (Hasta el 4 de diciembre de 2026)
-// Clases presenciales semanales de lunes a viernes según distribución por grados:
+// Clases presenciales semanales de lunes a viernes según distribución por grados (APROBADAS)
 // Lunes: 11-03, 09-02, 11-02
 // Martes: 09-03, 11-02
 // Miércoles: 09-04, 09-01
 // Jueves: 10-01, 11-01
 // Viernes: 10-04, 10-03
-// Virtuales quincenales (6 sesiones): Miércoles HB (03:30 PM - 05:30 PM) y Jueves CT (03:30 PM - 05:30 PM)
-// Docentes: semana del 5 al 9 de octubre (1 registro con estado 'Pendiente por definir')
+// Virtuales quincenales estudiantes (6 sesiones): Miércoles HB (03:30 PM - 05:30 PM) y Jueves CT (03:30 PM - 05:30 PM) (APROBADAS)
+// Docentes: Clases virtuales y presenciales pendientes por definir (POR CONCERTAR)
 // ==============================================================================
 const mondaysMega = [
   '2026-09-21', '2026-09-28', '2026-10-05', '2026-10-12', '2026-10-19',
@@ -944,7 +1284,7 @@ const fridaysMega = [
 ];
 
 const denzilMegaRules: RuleGroupDef[] = [
-  // A. Docentes: 1 registro 'Pendiente por definir' (Semana del 5 al 9 de octubre de 2026, Presencial)
+  // A. Docentes: Clases Presenciales y Virtuales pendientes por definir (POR CONCERTAR)
   {
     key: 'mega-doc-pres',
     municipality: 'Riohacha',
@@ -959,8 +1299,8 @@ const denzilMegaRules: RuleGroupDef[] = [
     endTime: '12:00 PM',
     frequency: 'Por Definir',
     gradeOrCycle: 'Docentes',
-    observations: 'Semana del 5 al 9 de octubre de 2026, Presencial. Estado: Pendiente por definir.',
-    status: 'Pendiente por definir',
+    observations: 'Semana del 5 al 9 de octubre de 2026, Jornada Pedagógica Docente Presencial. Estado: Por concertar con directivos.',
+    status: 'POR CONCERTAR',
     dates: ['2026-10-05']
   },
 
@@ -980,9 +1320,9 @@ const denzilMegaRules: RuleGroupDef[] = [
     endTime: '10:00 AM',
     frequency: 'Semanal',
     gradeOrCycle: 'Grado 11-03',
-    observations: 'Presencial semanal continuo hasta el 4 de diciembre (inicia 21-Sep).',
+    observations: 'Presencial semanal continuo hasta el 4 de diciembre (inicia 21-Sep; 5-Oct reservado para Jornada Docente).',
     status: 'Programada',
-    dates: mondaysMega
+    dates: mondaysMega.filter(d => d !== '2026-10-05')
   },
   {
     key: 'mega-lun-902-ct',
@@ -1304,22 +1644,40 @@ const chonkayRules: RuleGroupDef[] = [
     dates: thursdaysMega
   },
 
-  // Viernes (inicia 18-Sep): Grados 10-04 y 11-03 (Conjunto)
+  // Viernes (inicia 18-Sep): Grados 10-04 y 11-03
   {
-    key: 'chonkay-vie-1004-1103-hb',
+    key: 'chonkay-vie-1004-hb',
+    municipality: 'Riohacha',
+    institution: 'I.E. Chon-Kay',
+    campus: 'Sede Principal Chon-Kay',
+    academicShift: 'Tarde (4:20 p.m. - 5:10 p.m.)',
+    targetPopulation: 'Estudiantes',
+    trainingType: 'Habilidades Blandas',
+    topic: 'Habilidades Blandas Grado 10-04',
+    modality: 'Presencial',
+    startTime: '04:20 PM',
+    endTime: '05:10 PM',
+    frequency: 'Semanal',
+    gradeOrCycle: 'Grado 10-04',
+    observations: 'Presencial semanal continuo hasta el 4 de diciembre (inicia 18-Sep).',
+    status: 'Programada',
+    dates: fridaysMega
+  },
+  {
+    key: 'chonkay-vie-1103-hb',
     municipality: 'Riohacha',
     institution: 'I.E. Chon-Kay',
     campus: 'Sede Principal Chon-Kay',
     academicShift: 'Tarde (5:10 p.m. - 5:55 p.m.)',
     targetPopulation: 'Estudiantes',
     trainingType: 'Habilidades Blandas',
-    topic: 'Habilidades Blandas Grados 10-04 y 11-03 (Conjunto)',
+    topic: 'Habilidades Blandas Grado 11-03',
     modality: 'Presencial',
     startTime: '05:10 PM',
     endTime: '05:55 PM',
     frequency: 'Semanal',
-    gradeOrCycle: 'Grados 10-04 y 11-03 (Conjunto)',
-    observations: 'Presencial semanal continuo hasta el 4 de diciembre (inicia 18-Sep). Grados 10-04 y 11-03 en sesión conjunta.',
+    gradeOrCycle: 'Grado 11-03',
+    observations: 'Presencial semanal continuo hasta el 4 de diciembre (inicia 18-Sep).',
     status: 'Programada',
     dates: fridaysMega
   },
@@ -1406,51 +1764,112 @@ const allRuleGroups: RuleGroupDef[] = [
 // Export all rule groups
 export { allRuleGroups };
 
-// Generate EXACTLY 1 TrainingSession per training track/rule group (no duplicate repetitions)
-export const initialValidatedSessions: TrainingSession[] = allRuleGroups.map((group, index) => {
-  const scheduledMonths = formatScheduledMonths(group.dates);
-  const duration = calculateDuration(group.startTime, group.endTime);
-  const uniqueDays = Array.from(new Set(group.dates.map(d => getDayOfWeekSpanish(d))));
-  const primaryDate = group.dates[0] || '2026-09-15';
+// Expand multiple dates into individual TrainingSession records
+export const expandToIndividualSessions = (sessions: TrainingSession[]): TrainingSession[] => {
+  const result: TrainingSession[] = [];
+  let itemCounter = 1;
 
-  // Strict idempotent deterministic ID per single training track (1 por cada dato)
-  const deterministicId = group.key
-    ? `sess_${group.key.replace(/[^a-zA-Z0-9_]/g, '_').toLowerCase()}`
-    : `${group.institution}_${group.startTime}_${group.targetPopulation}_${group.modality}`
-        .replace(/[^a-zA-Z0-9_]/g, '_')
-        .toLowerCase();
+  sessions.forEach(s => {
+    const dates = (s.specificDates && s.specificDates.length > 0)
+      ? s.specificDates
+      : [s.specificDate || s.date || '2026-09-15'];
 
-  const session: TrainingSession = {
-    id: deterministicId,
-    itemNumber: index + 1,
-    municipality: group.municipality,
-    institution: group.institution,
-    campus: group.campus,
-    academicShift: group.academicShift,
-    targetAudience: group.targetPopulation,
-    targetPopulation: group.targetPopulation,
-    trainingType: group.trainingType,
-    topic: group.topic,
-    modality: group.modality,
-    status: group.status || 'Programada',
-    daysOfWeek: uniqueDays.length > 0 ? uniqueDays : ['Por definir'],
-    datesScheduled: scheduledMonths,
-    specificDate: primaryDate,
-    date: primaryDate,
-    specificDates: group.dates,
-    startTime: group.startTime,
-    endTime: group.endTime,
-    durationHours: duration,
-    frequency: group.frequency,
-    responsible: 'The Biz Nation',
-    gradeOrCycle: group.gradeOrCycle,
-    observations: group.observations,
-    infrastructureNotes: `Parametrización validada (${group.frequency}). Horario: ${group.startTime} - ${group.endTime}.`,
-    lastUpdated: '2026-09-14'
-  };
+    if (dates.length <= 1) {
+      result.push({
+        ...s,
+        itemNumber: itemCounter++,
+        specificDate: dates[0],
+        date: dates[0],
+        specificDates: [dates[0]],
+        daysOfWeek: s.daysOfWeek && s.daysOfWeek.length > 0 ? s.daysOfWeek : [getDayOfWeekSpanish(dates[0])],
+        datesScheduled: formatScheduledMonths([dates[0]])
+      });
+    } else {
+      dates.forEach((d, idx) => {
+        const dayName = getDayOfWeekSpanish(d);
+        const sessionNum = idx + 1;
+        result.push({
+          ...s,
+          id: `${s.id}_date_${d}`,
+          itemNumber: itemCounter++,
+          specificDate: d,
+          date: d,
+          specificDates: [d],
+          daysOfWeek: [dayName],
+          datesScheduled: formatScheduledMonths([d]),
+          observations: s.observations 
+            ? `${s.observations} (Sesión ${sessionNum}/${dates.length})` 
+            : `Sesión ${sessionNum} de ${dates.length} (${s.modality}).`
+        });
+      });
+    }
+  });
 
-  return session;
-});
+  return result;
+};
 
-export const SCHEDULE_RULES_SESSIONS: TrainingSession[] = initialValidatedSessions;
-export default initialValidatedSessions;
+// Generate EXACTLY 1 TrainingSession per real execution date in the Calendar
+export const calendarExpandedSessions: TrainingSession[] = (() => {
+  const sessionsList: TrainingSession[] = [];
+  let counter = 1;
+
+  allRuleGroups.forEach((group) => {
+    const isPajaro = group.institution.toLowerCase().includes('pájaro') || 
+                     group.institution.toLowerCase().includes('pajaro') ||
+                     group.key.includes('pajaro');
+    const isMegaDoc = (group.institution.toLowerCase().includes('mega') || (group.campus && group.campus.toLowerCase().includes('mega'))) &&
+                      (group.targetPopulation === 'Docentes' || group.trainingType.includes('Docente') || group.key.includes('mega-doc'));
+
+    const resolvedStatus: ScheduleStatus = group.status 
+      ? group.status 
+      : ((isPajaro || isMegaDoc) ? 'POR CONCERTAR' : 'APROBADO');
+    const duration = calculateDuration(group.startTime, group.endTime);
+
+    group.dates.forEach((dateStr, idx) => {
+      const dayOfWeek = getDayOfWeekSpanish(dateStr);
+      const scheduledMonths = formatScheduledMonths([dateStr]);
+      const sessionNum = group.sessionNumbers && group.sessionNumbers[idx] !== undefined 
+        ? group.sessionNumbers[idx] 
+        : (idx + 1);
+
+      const session: TrainingSession = {
+        id: `sess_${group.key}_${dateStr}`,
+        itemNumber: counter++,
+        municipality: group.municipality,
+        institution: group.institution,
+        campus: group.campus,
+        academicShift: group.academicShift,
+        targetAudience: group.targetPopulation,
+        targetPopulation: group.targetPopulation,
+        trainingType: group.trainingType,
+        topic: group.topic,
+        modality: group.modality,
+        status: resolvedStatus,
+        daysOfWeek: [dayOfWeek],
+        datesScheduled: scheduledMonths,
+        specificDate: dateStr,
+        date: dateStr,
+        specificDates: [dateStr],
+        startTime: group.startTime,
+        endTime: group.endTime,
+        durationHours: duration,
+        frequency: group.frequency,
+        responsible: 'The Biz Nation',
+        gradeOrCycle: group.gradeOrCycle,
+        observations: group.observations 
+          ? `${group.observations} (Sesión ${sessionNum})` 
+          : `Sesión ${sessionNum} de formación (${group.modality}).`,
+        infrastructureNotes: `Parametrización validada (${group.frequency}). Horario: ${group.startTime} - ${group.endTime}.`,
+        lastUpdated: '2026-09-14'
+      };
+
+      sessionsList.push(session);
+    });
+  });
+
+  return sessionsList;
+})();
+
+export const initialValidatedSessions: TrainingSession[] = calendarExpandedSessions;
+export const SCHEDULE_RULES_SESSIONS: TrainingSession[] = calendarExpandedSessions;
+export default calendarExpandedSessions;
