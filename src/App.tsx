@@ -24,6 +24,7 @@ import {
   setEmergencyUndoSnapshot 
 } from './utils/storage';
 import { analyzeConflictsAndRules } from './utils/conflictChecker';
+import { sortSessions, SessionSortField, SortOrder } from './utils/sorting';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { loadHtml2Pdf } from './utils/pdfExport';
 import { initialValidatedSessions, expandToIndividualSessions } from './data/scheduleRulesData';
@@ -774,12 +775,17 @@ export default function App() {
     }
   }, [allInstitutionNames]);
 
-  const handleExportExcel = (selectedInsts?: string[]) => {
+  const handleExportExcel = (
+    selectedInsts?: string[],
+    sortBy: SessionSortField = 'date',
+    sortOrder: SortOrder = 'asc'
+  ) => {
     const targetInsts = selectedInsts !== undefined 
       ? selectedInsts 
       : (selectedInstitution !== 'all' ? [selectedInstitution] : (printScopeMode === 'custom' && selectedInstsForPrint.length > 0 ? selectedInstsForPrint : undefined));
+    const sortedToExport = sortSessions(filteredSessions, sortBy, sortOrder);
     exportToExcel(
-      filteredSessions,
+      sortedToExport,
       institutions,
       restrictedInstName || (selectedInstitution !== 'all' ? selectedInstitution : null),
       branding,
@@ -1039,7 +1045,7 @@ export default function App() {
                 onOpenQuickAssign={() => setIsQuickAssignModalOpen(true)}
                 onOpenNewSession={handleOpenNewSession}
                 onExportHTML={() => exportToHTML(filteredSessions, branding)}
-                onExportExcel={(selectedInsts) => handleExportExcel(selectedInsts)}
+                onExportExcel={(selectedInsts, sortBy, sortOrder) => handleExportExcel(selectedInsts, sortBy, sortOrder)}
               />
             )}
 
@@ -1513,7 +1519,7 @@ export default function App() {
                 <span>Acceder con Google (Coordinador)</span>
               </button>
               <p className="text-[11px] text-slate-400 text-center mt-2.5 leading-snug">
-                Acceso restringido a cuentas <span className="text-slate-300 font-medium">@thebiznation.com</span> o correos autorizados de coordinación.
+                Acceso restringido a <span className="text-slate-300 font-medium">pmcp091@gmail.com</span>, <span className="text-slate-300 font-medium">logistica.geb@thebiznation.com</span> y cuentas <span className="text-slate-300 font-medium">@thebiznation.com</span>.
               </p>
             </form>
           </div>

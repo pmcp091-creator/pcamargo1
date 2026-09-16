@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { TrainingSession } from '../types/schedule';
+import { sortSessions, SessionSortField, SortOrder } from '../utils/sorting';
 import { 
   Building2, 
   MapPin, 
@@ -42,7 +43,7 @@ export interface SessionsTableViewProps {
   onOpenQuickAssign?: () => void;
   onOpenNewSession?: () => void;
   onExportHTML?: () => void;
-  onExportExcel?: (selectedInsts?: string[]) => void;
+  onExportExcel?: (selectedInsts?: string[], sortBy?: SessionSortField, sortOrder?: SortOrder) => void;
 }
 
 export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
@@ -90,42 +91,23 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
 
   // Sesiones con búsqueda de texto y ordenamiento aplicados sobre filteredSessions
   const displayedSessions = useMemo(() => {
-    return filteredSessions
-      .filter(s => {
-        if (selectedStatus !== 'all' && s.status !== selectedStatus) return false;
-        if (!searchTerm.trim()) return true;
+    const filtered = filteredSessions.filter(s => {
+      if (selectedStatus !== 'all' && s.status !== selectedStatus) return false;
+      if (!searchTerm.trim()) return true;
 
-        const term = searchTerm.toLowerCase();
-        return (
-          s.institution.toLowerCase().includes(term) ||
-          (s.campus || '').toLowerCase().includes(term) ||
-          s.trainingType.toLowerCase().includes(term) ||
-          (s.topic || '').toLowerCase().includes(term) ||
-          (s.specificDate || '').includes(term) ||
-          (s.observations || '').toLowerCase().includes(term) ||
-          s.daysOfWeek.join(' ').toLowerCase().includes(term)
-        );
-      })
-      .sort((a, b) => {
-        if (sortBy === 'date') {
-          const dateA = a.specificDate || a.date || '';
-          const dateB = b.specificDate || b.date || '';
-          if (!dateA && !dateB) return (a.itemNumber || 0) - (b.itemNumber || 0);
-          if (!dateA) return 1;
-          if (!dateB) return -1;
-          const dateCmp = sortOrder === 'desc' ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
-          if (dateCmp !== 0) return dateCmp;
-          return (a.itemNumber || 0) - (b.itemNumber || 0);
-        }
-        if (sortBy === 'itemNumber') {
-          const numA = a.itemNumber || 0;
-          const numB = b.itemNumber || 0;
-          return sortOrder === 'asc' ? numA - numB : numB - numA;
-        }
-        const valA = (a[sortBy] || '').toString();
-        const valB = (b[sortBy] || '').toString();
-        return sortOrder === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
-      });
+      const term = searchTerm.toLowerCase();
+      return (
+        s.institution.toLowerCase().includes(term) ||
+        (s.campus || '').toLowerCase().includes(term) ||
+        s.trainingType.toLowerCase().includes(term) ||
+        (s.topic || '').toLowerCase().includes(term) ||
+        (s.specificDate || '').includes(term) ||
+        (s.observations || '').toLowerCase().includes(term) ||
+        s.daysOfWeek.join(' ').toLowerCase().includes(term)
+      );
+    });
+
+    return sortSessions(filtered, sortBy, sortOrder);
   }, [filteredSessions, searchTerm, selectedStatus, sortBy, sortOrder]);
 
   // Métricas calculadas sobre filteredSessions
@@ -204,7 +186,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
               <button
                 type="button"
                 id="btn-table-export-excel"
-                onClick={() => onExportExcel()}
+                onClick={() => onExportExcel(undefined, sortBy, sortOrder)}
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
                 title="Exporta estrictamente las sesiones filtradas en pantalla con membrete y logos oficiales"
               >
@@ -365,7 +347,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                   ? (sortOrder === 'asc' ? 'item-asc' : 'item-desc')
                   : sortBy === 'date'
                     ? (sortOrder === 'desc' ? 'date-desc' : 'date-asc')
-                    : 'item-asc'
+                    : 'date-asc'
               }
               onChange={(e) => {
                 const val = e.target.value;
@@ -384,12 +366,12 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                 }
               }}
               className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              title="Ordenar por ítem o por fecha"
+              title="Ordenar por fecha o por ítem"
             >
+              <option value="date-asc">📅 Fecha: más lejana a reciente (Por defecto)</option>
+              <option value="date-desc">📅 Fecha: más reciente a más lejana</option>
               <option value="item-asc">🔢 Ordenar por ítem (1 → 470)</option>
               <option value="item-desc">🔢 Ordenar por ítem (470 → 1)</option>
-              <option value="date-desc">📅 Fecha: más reciente a más lejana</option>
-              <option value="date-asc">📅 Fecha: más lejana a reciente</option>
             </select>
 
             {/* Botón limpiar filtros */}
