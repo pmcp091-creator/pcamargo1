@@ -17,7 +17,8 @@ import {
   Users, 
   BookOpen,
   Eye,
-  Info
+  Info,
+  X
 } from 'lucide-react';
 import { SessionDetailModal } from './SessionDetailModal';
 
@@ -42,7 +43,7 @@ export interface CalendarViewProps {
   onExportExcel?: () => void;
   onExportCSV?: () => void;
   onExportHTML?: () => void;
-  onPrint?: () => void;
+  onPrint?: (targetSessions?: TrainingSession[], title?: string, periodLabel?: string) => void;
   sessionRole?: 'admin' | 'viewer';
 }
 
@@ -288,6 +289,123 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     });
   }, [weekStartDate]);
 
+  // Fecha activa seleccionada para impresión y visualización rápida
+  const [selectedDate, setSelectedDate] = useState<string>('2026-09-15');
+  const [showPrintModal, setShowPrintModal] = useState<boolean>(false);
+
+  const selectedDateObj = useMemo(() => {
+    const parts = selectedDate.split('-').map(Number);
+    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+    return new Date(currentYear, currentMonth, 15);
+  }, [selectedDate, currentYear, currentMonth]);
+
+  const selectedDateFormatted = useMemo(() => {
+    const dayName = DAYS_HEADER[selectedDateObj.getDay()] || 'Día';
+    const monthName = MONTH_NAMES[selectedDateObj.getMonth()] || 'Mes';
+    return `${dayName}, ${selectedDateObj.getDate()} de ${monthName} de ${selectedDateObj.getFullYear()}`;
+  }, [selectedDateObj]);
+
+  // Cálculo del rango Lunes a Sábado de la semana visible
+  const { weekDates, weekRangeLabel } = useMemo(() => {
+    let monday: Date;
+    if (viewMode === 'week') {
+      monday = new Date(weekStartDate);
+      monday.setDate(monday.getDate() + 1); // Sunday + 1 = Monday
+    } else {
+      const dayOfWeek = selectedDateObj.getDay(); // 0 = Domingo, 1 = Lunes, ... 6 = Sábado
+      const offsetToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+      monday = new Date(selectedDateObj);
+      monday.setDate(monday.getDate() + offsetToMonday);
+    }
+    monday.setHours(0, 0, 0, 0);
+
+    const dates = [0, 1, 2, 3, 4, 5].map(offset => {
+      const d = new Date(monday);
+      d.setDate(d.getDate() + offset);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return {
+        date: d,
+        dateStr: `${y}-${m}-${day}`,
+        dayName: DAYS_HEADER[d.getDay()],
+        dayNumber: d.getDate(),
+        monthName: MONTH_NAMES[d.getMonth()]
+      };
+    });
+
+    const saturday = dates[5];
+    const startDay = dates[0].dayNumber;
+    const startMonth = dates[0].monthName;
+    const endDay = saturday.dayNumber;
+    const endMonth = saturday.monthName;
+    const endYear = saturday.date.getFullYear();
+
+    const label = startMonth === endMonth
+      ? `Lunes ${startDay} al Sábado ${endDay} de ${endMonth} de ${endYear}`
+      : `Lunes ${startDay} de ${startMonth} al Sábado ${endDay} de ${endMonth} de ${endYear}`;
+
+    return { weekDates: dates, weekRangeLabel: label };
+  }, [viewMode, weekStartDate, selectedDateObj]);
+
+  // Formaciones filtradas del Día Actual seleccionado
+  const currentDaySessions = useMemo(() => {
+    const dayName = DAYS_HEADER[selectedDateObj.getDay()];
+    const dayNumber = selectedDateObj.getDate();
+    const raw = getSessionsForDate(selectedDate, dayName, dayNumber);
+    return raw.filter((session, idx, self) => 
+      idx === self.findIndex(s => (s.id ? s.id === session.id : `${s.institution}-${s.date}-${s.startTime}-${s.topic}` === `${session.institution}-${session.date}-${session.startTime}-${session.topic}`))
+    ).map(s => ({
+      ...s,
+      specificDate: s.specificDate || selectedDate
+    }));
+  }, [selectedDate, selectedDateObj, getSessionsForDate]);
+
+  // Formaciones filtradas de la Semana Completa (Lunes a Sábado)
+  const currentWeekSessions = useMemo(() => {
+    const collected: TrainingSession[] = [];
+    weekDates.forEach(wd => {
+      const daySessions = getSessionsForDate(wd.dateStr, wd.dayName, wd.dayNumber);
+      daySessions.forEach(s => {
+        const exists = collected.some(ex => 
+          (ex.id && s.id && ex.id === s.id) || 
+          (ex.institution === s.institution && (ex.specificDate || ex.date) === wd.dateStr && ex.startTime === s.startTime && ex.topic === s.topic)
+        );
+        if (!exists) {
+          collected.push({
+            ...s,
+            specificDate: s.specificDate || wd.dateStr
+          });
+        }
+      });
+    });
+    return collected;
+  }, [weekDates, getSessionsForDate]);
+
+  const handlePrintDay = () => {
+    setShowPrintModal(false);
+    if (onPrint) {
+      onPrint(
+        currentDaySessions,
+        `AGENDA DIARIA — ${selectedDateFormatted.toUpperCase()}`,
+        `Día: ${selectedDateFormatted}`
+      );
+    }
+  };
+
+  const handlePrintWeek = () => {
+    setShowPrintModal(false);
+    if (onPrint) {
+      onPrint(
+        currentWeekSessions,
+        `AGENDA SEMANAL — ${weekRangeLabel.toUpperCase()}`,
+        `Semana: ${weekRangeLabel}`
+      );
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Top Banner & Filter Controls */}
@@ -346,16 +464,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               </button>
             )}
 
-            {onPrint && (
-              <button
-                onClick={onPrint}
-                className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-sky-700 dark:text-sky-400 hover:text-slate-900 dark:hover:text-white font-semibold px-3 py-2 rounded-xl text-xs flex items-center gap-1.5 border border-slate-300 dark:border-slate-700 transition"
-                title="Imprimir o guardar como PDF"
-              >
-                <Printer className="w-4 h-4" />
-                <span>Imprimir / PDF</span>
-              </button>
-            )}
+            <button 
+              type="button"
+              id="btn-calendar-print-agenda"
+              onClick={() => setShowPrintModal(true)}
+              className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl border border-slate-700 shadow flex items-center gap-2 transition cursor-pointer"
+            >
+              🖨️ Imprimir Agenda
+            </button>
           </div>
         </div>
 
@@ -560,12 +676,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 index === self.findIndex((s) => (s.id ? s.id === session.id : `${s.institution}-${s.date}-${s.startTime}-${s.topic}` === `${session.institution}-${session.date}-${session.startTime}-${session.topic}`))
               );
 
+              const isSelectedDay = dateStr === selectedDate;
+
               return (
                 <div
                   key={`day-${dayNumber}`}
-                  onClick={isAdmin ? () => onAddSessionForDate(dateStr) : undefined}
-                  className={`min-h-[120px] p-2 border-r border-b border-slate-200 dark:border-slate-800/70 flex flex-col justify-between transition-colors ${
-                    isAdmin ? 'hover:bg-slate-100/70 dark:hover:bg-slate-800/40 cursor-pointer group' : ''
+                  onClick={() => setSelectedDate(dateStr)}
+                  className={`min-h-[120px] p-2 border-r border-b border-slate-200 dark:border-slate-800/70 flex flex-col justify-between transition-colors cursor-pointer group ${
+                    isSelectedDay 
+                      ? 'ring-2 ring-inset ring-amber-400 dark:ring-amber-500 bg-amber-50/30 dark:bg-amber-950/20' 
+                      : ''
                   } ${
                     isOvercapacity 
                       ? 'bg-rose-50/70 dark:bg-rose-950/20' 
@@ -740,11 +860,17 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               const hasConflict = uniqueInsts.length > 2;
 
               const isWeekend = dayInfo.dayOfWeekIdx === 0 || dayInfo.dayOfWeekIdx === 6;
+              const isSelectedDay = dayInfo.dateStr === selectedDate;
 
               return (
                 <div
                   key={dayInfo.dateStr}
-                  className={`bg-slate-50 dark:bg-slate-800/70 rounded-xl border overflow-hidden flex flex-col ${
+                  onClick={() => setSelectedDate(dayInfo.dateStr)}
+                  className={`bg-slate-50 dark:bg-slate-800/70 rounded-xl border overflow-hidden flex flex-col cursor-pointer transition-all ${
+                    isSelectedDay 
+                      ? 'ring-2 ring-amber-400 dark:ring-amber-500 shadow-md' 
+                      : ''
+                  } ${
                     hasConflict
                       ? 'border-rose-400 dark:border-rose-500/80 ring-2 ring-rose-500/20'
                       : 'border-slate-200 dark:border-slate-700'
@@ -906,6 +1032,123 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           onDeleteSession(id);
         }}
       />
+
+      {/* MODAL UNIFICADO DE IMPRESIÓN (DÍA / SEMANA) */}
+      {showPrintModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">🖨️</span>
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                    Imprimir Agenda Oficial
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Selecciona el alcance para generar el reporte
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Selector interactivo de fecha activa */}
+            <div className="mt-4 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Fecha Activa:</span>
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block truncate" title={selectedDateFormatted}>
+                  {selectedDateFormatted}
+                </span>
+              </div>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="text-xs bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1 font-medium text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-1 focus:ring-amber-500 cursor-pointer"
+              />
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {/* Opción 1: Imprimir Día Actual */}
+              <button
+                type="button"
+                onClick={handlePrintDay}
+                className="w-full text-left p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-amber-50/50 dark:hover:bg-amber-950/20 hover:border-amber-400 dark:hover:border-amber-500/50 transition group cursor-pointer"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl p-2 rounded-lg bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                      📅
+                    </span>
+                    <div>
+                      <span className="text-sm font-bold text-slate-900 dark:text-white block group-hover:text-amber-600 dark:group-hover:text-amber-400">
+                        Imprimir Día Actual
+                      </span>
+                      <span className="text-xs text-slate-600 dark:text-slate-300 font-medium block mt-0.5">
+                        {selectedDateFormatted}
+                      </span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 block font-semibold">
+                        {currentDaySessions.length} {currentDaySessions.length === 1 ? 'formación programada' : 'formaciones programadas'}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-amber-600 dark:text-amber-400 group-hover:translate-x-1 transition-transform">
+                    →
+                  </span>
+                </div>
+              </button>
+
+              {/* Opción 2: Imprimir Semana Completa */}
+              <button
+                type="button"
+                onClick={handlePrintWeek}
+                className="w-full text-left p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/60 hover:bg-sky-50/50 dark:hover:bg-sky-950/20 hover:border-sky-400 dark:hover:border-sky-500/50 transition group cursor-pointer"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl p-2 rounded-lg bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300">
+                      🗓️
+                    </span>
+                    <div>
+                      <span className="text-sm font-bold text-slate-900 dark:text-white block group-hover:text-sky-600 dark:group-hover:text-sky-400">
+                        Imprimir Semana Completa
+                      </span>
+                      <span className="text-xs text-slate-600 dark:text-slate-300 font-medium block mt-0.5">
+                        {weekRangeLabel}
+                      </span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 block font-semibold">
+                        {currentWeekSessions.length} {currentWeekSessions.length === 1 ? 'formación en lunes a sábado' : 'formaciones en lunes a sábado'}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-sky-600 dark:text-sky-400 group-hover:translate-x-1 transition-transform">
+                    →
+                  </span>
+                </div>
+              </button>
+            </div>
+
+            <div className="mt-5 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span className="text-[11px] text-slate-500">
+                Formato: Membrete Legado • Pie con 5 logos
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowPrintModal(false)}
+                className="px-3 py-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

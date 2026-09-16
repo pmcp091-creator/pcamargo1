@@ -9,6 +9,9 @@ import {
 } from 'firebase/auth';
 import { 
   getFirestore, 
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   doc, 
   getDocFromServer,
   collection,
@@ -18,16 +21,33 @@ import {
   writeBatch,
   getDocs,
   query,
-  limit
+  limit,
+  Firestore
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { TrainingSession, ChangeRequest, InstitutionProfile } from '../types/schedule';
 
-// Inicializar App y Servicios
+// Inicializar App y Servicios con Soporte Offline 100% (IndexedDB)
 const app = initializeApp(firebaseConfig);
 
+let firestoreInstance: Firestore;
+try {
+  firestoreInstance = initializeFirestore(
+    app,
+    {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    },
+    firebaseConfig.firestoreDatabaseId
+  );
+} catch (error) {
+  console.warn('Fallback en inicialización de Firestore con caché:', error);
+  firestoreInstance = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+}
+
 /* CRITICAL: The app will break without this line */
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const db = firestoreInstance;
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 

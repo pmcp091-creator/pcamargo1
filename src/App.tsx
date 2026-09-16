@@ -59,6 +59,7 @@ import { PedroGuideModal } from './components/PedroGuideModal';
 import { RequestRescheduleModal } from './components/RequestRescheduleModal';
 import { DashboardView } from './components/DashboardView';
 import { InstitutionalKioskView } from './components/InstitutionalKioskView';
+import { CoordinationAuthModal } from './components/CoordinationAuthModal';
 import { 
   WifiOff, AlertTriangle, RotateCcw, 
   KeyRound, BarChart3, Printer, Building2, X, Loader2, CheckCircle2, Trash2,
@@ -153,12 +154,13 @@ export default function App() {
     return localStorage.getItem('restricted_inst_name') || null;
   });
   const [showAdminLoginModal, setShowAdminLoginModal] = useState<boolean>(false);
-  const [adminKeyInput, setAdminKeyInput] = useState('');
-  const [adminKeyError, setAdminKeyError] = useState('');
 
   // Navigation State
   const [activeTab, setActiveTab] = useState<ActiveTab | 'dashboard'>('calendar');
   const [isPrintView, setIsPrintView] = useState<boolean>(false);
+  const [printCustomSessions, setPrintCustomSessions] = useState<TrainingSession[] | null>(null);
+  const [printCustomTitle, setPrintCustomTitle] = useState<string | null>(null);
+  const [printPeriodLabel, setPrintPeriodLabel] = useState<string | null>(null);
 
   // Print Setup State (Imprenta: Carta vs Oficio + Selección de Bloques)
   const [showPrintOptionsModal, setShowPrintOptionsModal] = useState(false);
@@ -275,9 +277,14 @@ export default function App() {
     // 2. Escuchar estado de autenticación (Google Auth / Admin)
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setFirebaseUser(user);
-      if (user && (user.email === 'pmcp091@gmail.com' || user.email?.toLowerCase().includes('thebiznation'))) {
-        setSessionRole('admin');
-        localStorage.setItem('auth_role', 'admin');
+      if (user) {
+        const userEmail = user.email?.toLowerCase() || '';
+        const isSpecificAllowed = userEmail === 'pmcp091@gmail.com' || userEmail === 'logistica.geb@thebiznation.com';
+        const isDomainAllowed = userEmail.endsWith('@thebiznation.com');
+        if (isSpecificAllowed || isDomainAllowed) {
+          setSessionRole('admin');
+          localStorage.setItem('auth_role', 'admin');
+        }
       }
     });
 
@@ -288,7 +295,25 @@ export default function App() {
       itemNumber: idx + 1
     }));
 
+    // Garantía Offline Inmediata: Si Firestore no responde en 1.5s por falta de red,
+    // asegurar inmediatamente la carga de las 470 sesiones oficiales sin esperas infinitas
+    const offlineGraceTimer = setTimeout(() => {
+      setFirebaseSyncStatus((prev) => (prev === 'connecting' ? 'offline' : prev));
+      setSessions((prev) => {
+        if (prev && prev.length >= 400) return prev;
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          } catch (e) {}
+        }
+        return initialClean;
+      });
+    }, 1500);
+
     const unsubscribeSessions = subscribeToSessions((firestoreSessions) => {
+      clearTimeout(offlineGraceTimer);
       if (firestoreSessions.length > 0) {
         // Filtrar localmente registros no deseados (El Pájaro o Microlearning)
         const cleanSessions = firestoreSessions.filter(
@@ -315,8 +340,21 @@ export default function App() {
         }).catch(err => console.warn('Aviso en seed inicial:', err));
       }
     }, (err) => {
-      console.warn('Firestore offline o error de conexión en sesiones:', err);
+      clearTimeout(offlineGraceTimer);
+      console.warn('Firestore offline o sin conectividad en sesiones:', err);
       setFirebaseSyncStatus('offline');
+      // En modo sin conexión, garantizar carga instantánea desde memoria local
+      setSessions((prev) => {
+        if (prev && prev.length >= 400) return prev;
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+          } catch (e) {}
+        }
+        return initialClean;
+      });
     });
 
     // 4. Suscripción en Tiempo Real a las solicitudes de cambio
@@ -329,6 +367,7 @@ export default function App() {
     });
 
     return () => {
+      clearTimeout(offlineGraceTimer);
       unsubscribeAuth();
       unsubscribeSessions();
       unsubscribeRequests();
@@ -504,40 +543,6 @@ export default function App() {
 
   const highAlertCount = useMemo(() => alerts.filter(a => a.severity === 'high').length, [alerts]);
   const pendingSessions = useMemo(() => visibleSessions.filter(s => s.status === 'PDTE'), [visibleSessions]);
-
-  // Manejo de Acceso de Coordinador y Desbloqueo
-  const handleAdminLoginSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setAdminKeyError('');
-    const cleanKey = adminKeyInput.trim().toUpperCase();
-
-    if (cleanKey === 'ADMIN2026') {
-      setSessionRole('admin');
-      localStorage.setItem('auth_role', 'admin');
-      setShowAdminLoginModal(false);
-      setAdminKeyInput('');
-      setAdminKeyError('');
-      return;
-    }
-
-    setAdminKeyError('Clave incorrecta. Ingrese la clave maestra de Coordinación (ADMIN2026).');
-  };
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setAdminKeyError('');
-      const user = await signInWithGoogle();
-      if (user) {
-        setSessionRole('admin');
-        localStorage.setItem('auth_role', 'admin');
-        setShowAdminLoginModal(false);
-        setToastMessage(`Bienvenido Coordinador: ${user.displayName || user.email}`);
-      }
-    } catch (err: any) {
-      console.warn("Error en inicio de sesión con Google:", err);
-      setAdminKeyError(err.message || "Error al autenticar con Google.");
-    }
-  };
 
   const handleLogout = () => {
     setSessionRole('viewer');
@@ -752,6 +757,9 @@ export default function App() {
   const handleGenerateDocument = () => {
     // 1. Cerrar el modal de configuración de impresión
     setShowPrintOptionsModal(false);
+    setPrintCustomSessions(null);
+    setPrintCustomTitle(null);
+    setPrintPeriodLabel(null);
     
     // 2. Activar la vista dedicada de impresión
     setIsPrintView(true);
@@ -792,7 +800,7 @@ export default function App() {
       {!isOnline && (
         <div className="bg-amber-600 text-white text-xs font-semibold px-4 py-1 text-center flex items-center justify-center gap-1.5 shadow-xs no-print">
           <WifiOff className="w-3.5 h-3.5" />
-          <span>Modo Offline: Operando con almacenamiento local. Sincronización remota activa al recuperar red.</span>
+          <span>Modo sin conexión (datos guardados en memoria local)</span>
         </div>
       )}
 
@@ -867,8 +875,6 @@ export default function App() {
         pendingRequestsCount={pendingRequestsCount}
         sessionRole={sessionRole}
         onOpenAdminLogin={() => {
-          setAdminKeyInput('');
-          setAdminKeyError('');
           setShowAdminLoginModal(true);
         }}
         onLogoutAdmin={handleLogout}
@@ -949,14 +955,21 @@ export default function App() {
           <DashboardView sessions={sessions} institutions={institutions} />
         ) : isPrintView ? (
           <PrintScheduleView
-            sessions={filteredSessions}
+            sessions={printCustomSessions || filteredSessions}
             allSessions={sessions}
             branding={branding}
             selectedInstitution={selectedInstitution}
             selectedMunicipality={selectedMunicipality}
             selectedModality={selectedModality}
-            onBack={() => setIsPrintView(false)}
-            onExportHTML={() => exportToHTML(filteredSessions, branding, institutions)}
+            customTitle={printCustomTitle}
+            periodLabel={printPeriodLabel}
+            onBack={() => {
+              setIsPrintView(false);
+              setPrintCustomSessions(null);
+              setPrintCustomTitle(null);
+              setPrintPeriodLabel(null);
+            }}
+            onExportHTML={() => exportToHTML(printCustomSessions || filteredSessions, branding, institutions)}
             onExportExcel={(selectedInsts) => handleExportExcel(selectedInsts)}
             paperFormat={paperFormat}
             paperOrientation={paperOrientation}
@@ -1011,7 +1024,20 @@ export default function App() {
                 onExportExcel={() => handleExportExcel()}
                 onExportCSV={() => exportToCSV(filteredSessions, restrictedInstName || (selectedInstitution !== 'all' ? selectedInstitution : null))}
                 onExportHTML={() => exportToHTML(filteredSessions, branding)}
-                onPrint={() => setShowPrintOptionsModal(true)}
+                onPrint={(targetSessions, title, period) => {
+                  if (targetSessions) {
+                    setPrintCustomSessions(targetSessions);
+                    setPrintCustomTitle(title || null);
+                    setPrintPeriodLabel(period || null);
+                    setIsPrintView(true);
+                    setTimeout(() => {
+                      window.focus();
+                      window.print();
+                    }, 400);
+                  } else {
+                    setShowPrintOptionsModal(true);
+                  }
+                }}
               />
             )}
 
@@ -1372,83 +1398,21 @@ export default function App() {
         </div>
       )}
 
-      {/* Modal de Acceso Exclusivo para Coordinador */}
-      {showAdminLoginModal && (
-        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-slate-100 relative">
-            <button
-              onClick={() => setShowAdminLoginModal(false)}
-              className="absolute top-4 right-4 text-slate-400 hover:text-white p-1 rounded-lg transition"
-              title="Cerrar"
-            >
-              ✕
-            </button>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
-                <KeyRound className="w-7 h-7 text-amber-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold">Acceso de Coordinación</h3>
-                <p className="text-xs text-slate-400">The Biz Nation • Vocación que Transforma</p>
-              </div>
-            </div>
-            <p className="text-xs text-slate-300 mb-4 leading-relaxed">
-              Ingrese la clave de Coordinador para desbloquear las funciones de edición (crear/modificar sesiones, validar cruces y editar sedes).
-            </p>
-            <form onSubmit={handleAdminLoginSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                  Clave Maestra
-                </label>
-                <input 
-                  type="password"
-                  autoFocus
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-amber-400 transition text-sm"
-                  placeholder="Ingrese clave (ADMIN2026)"
-                  value={adminKeyInput}
-                  onChange={e => setAdminKeyInput(e.target.value)}
-                />
-              </div>
-              {adminKeyError && <p className="text-rose-400 text-xs font-medium">{adminKeyError}</p>}
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowAdminLoginModal(false)}
-                  className="w-1/2 px-4 py-2.5 text-xs font-semibold text-slate-400 hover:bg-slate-800 rounded-xl transition"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  type="submit"
-                  className="w-1/2 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold py-2.5 rounded-xl transition shadow-lg text-xs cursor-pointer"
-                >
-                  Desbloquear
-                </button>
-              </div>
-
-              <div className="relative flex py-2 items-center">
-                <div className="grow border-t border-slate-700"></div>
-                <span className="shrink mx-3 text-[11px] text-slate-400 uppercase tracking-wider font-semibold">o continuar con</span>
-                <div className="grow border-t border-slate-700"></div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 px-4 rounded-xl border border-slate-600 transition shadow-xs text-xs cursor-pointer"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
-                  <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.37 7.33 24 12 24z"/>
-                  <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.97 0 12s.46 3.84 1.26 5.42l4.02-3.15z"/>
-                  <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.25 2.63 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"/>
-                </svg>
-                <span>Acceder con Google (Coordinador)</span>
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Modal de Autenticación de Coordinación */}
+      <CoordinationAuthModal
+        isOpen={showAdminLoginModal}
+        onClose={() => setShowAdminLoginModal(false)}
+        onSuccess={(displayName) => {
+          setSessionRole('admin');
+          localStorage.setItem('auth_role', 'admin');
+          setShowAdminLoginModal(false);
+          setToastMessage(
+            displayName
+              ? `Bienvenido Coordinador: ${displayName}`
+              : 'Acceso de Coordinación concedido.'
+          );
+        }}
+      />
 
       {/* Footer Membretado con los 5 Aliados Estratégicos */}
       <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-4 px-4 sm:px-6 lg:px-8 text-xs text-slate-500 dark:text-slate-400 no-print mt-auto transition-colors">
@@ -1487,8 +1451,6 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => {
-                  setAdminKeyInput('');
-                  setAdminKeyError('');
                   setShowAdminLoginModal(true);
                 }}
                 className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-semibold text-slate-600 dark:text-slate-300 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 transition cursor-pointer shrink-0"
@@ -1658,6 +1620,32 @@ export default function App() {
             <X className="w-4 h-4" />
           </button>
         </div>
+      )}
+
+      {/* Indicador Flotante de Conexión en Esquina Inferior */}
+      {!isOnline ? (
+        <aside
+          id="offline-floating-badge"
+          className="fixed bottom-4 left-4 z-50 flex items-center gap-2.5 px-3.5 py-2 bg-slate-900/95 dark:bg-slate-950/95 text-amber-300 border border-amber-500/50 rounded-xl shadow-2xl text-xs font-semibold backdrop-blur-md no-print animate-in fade-in slide-in-from-bottom-2 duration-200"
+          role="status"
+          aria-live="polite"
+        >
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+          </span>
+          <WifiOff className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span>Modo sin conexión (datos guardados en memoria local)</span>
+        </aside>
+      ) : (
+        <aside
+          id="online-status-dot"
+          className="fixed bottom-4 left-4 z-40 flex items-center gap-1.5 px-2.5 py-1 bg-slate-900/60 dark:bg-slate-950/60 border border-slate-800/80 rounded-full text-[11px] text-slate-300 backdrop-blur-xs opacity-60 hover:opacity-100 transition-opacity no-print"
+          title="Conexión en línea activa"
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.9)]" />
+          <span className="text-[10px] font-medium hidden sm:inline text-slate-300">En línea</span>
+        </aside>
       )}
     </div>
   );

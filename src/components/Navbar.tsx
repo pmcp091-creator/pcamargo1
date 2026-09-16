@@ -315,7 +315,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 id="btn-coordination-access"
                 onClick={onOpenAdminLogin}
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-amber-950 bg-amber-400 hover:bg-amber-500 border border-amber-500/40 rounded-lg shadow-xs transition active:scale-95"
-                title="Acceso exclusivo con clave maestra para el Coordinador"
+                title="Acceso para el equipo de Coordinación"
               >
                 <KeyRound className="w-3.5 h-3.5 text-amber-950" />
                 <span>Acceso Coordinación</span>
