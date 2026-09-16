@@ -111,6 +111,23 @@ export async function testConnection() {
 }
 
 // Iniciar sesión con Google para Coordinación / Admin
+/**
+ * Valida si un correo electrónico cuenta con permisos de Coordinación / Admin.
+ * Autorizados:
+ * - pmcp091@gmail.com
+ * - logistica.geb@thebiznation.com
+ * - Cualquier cuenta con dominio '@thebiznation.com'
+ */
+export function isAuthorizedCoordinatorEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const normalized = email.trim().toLowerCase();
+  return (
+    normalized === 'pmcp091@gmail.com' ||
+    normalized === 'logistica.geb@thebiznation.com' ||
+    normalized.endsWith('@thebiznation.com')
+  );
+}
+
 export async function signInWithGoogle(): Promise<User | null> {
   try {
     const result = await signInWithPopup(auth, googleProvider);

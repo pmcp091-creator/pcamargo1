@@ -18,7 +18,9 @@ import {
   Sparkles,
   CalendarDays,
   Layers,
-  ArrowUpDown
+  ArrowUpDown,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 
 export interface SessionsTableViewProps {
@@ -69,6 +71,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'institution' | 'modality' | 'status' | 'itemNumber'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [isSortMenuOpen, setIsSortMenuOpen] = useState(false);
 
   // Opciones dinámicas de instituciones según el municipio seleccionado
   const institutionOptions = useMemo(() => {
@@ -107,7 +110,12 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
         if (sortBy === 'date') {
           const dateA = a.specificDate || a.date || '';
           const dateB = b.specificDate || b.date || '';
-          return sortOrder === 'asc' ? dateA.localeCompare(dateB) : dateB.localeCompare(dateA);
+          if (!dateA && !dateB) return (a.itemNumber || 0) - (b.itemNumber || 0);
+          if (!dateA) return 1;
+          if (!dateB) return -1;
+          const dateCmp = sortOrder === 'desc' ? dateB.localeCompare(dateA) : dateA.localeCompare(dateB);
+          if (dateCmp !== 0) return dateCmp;
+          return (a.itemNumber || 0) - (b.itemNumber || 0);
         }
         if (sortBy === 'itemNumber') {
           const numA = a.itemNumber || 0;
@@ -133,6 +141,8 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
     if (setSelectedAudience) setSelectedAudience('all');
     setSelectedStatus('all');
     setSearchTerm('');
+    setSortBy('date');
+    setSortOrder('asc');
   };
 
   const hasActiveFilters = 
@@ -141,7 +151,9 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
     selectedModality !== 'all' || 
     selectedAudience !== 'all' || 
     selectedStatus !== 'all' || 
-    searchTerm !== '';
+    searchTerm !== '' ||
+    sortBy !== 'date' ||
+    sortOrder !== 'asc';
 
   return (
     <div className="space-y-4">
@@ -345,6 +357,41 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
               <option value="COMPLETADO">COMPLETADO</option>
             </select>
 
+            {/* Filtro y Ordenamiento por Ítem o Fecha */}
+            <select
+              id="select-sort-filter"
+              value={
+                sortBy === 'itemNumber'
+                  ? (sortOrder === 'asc' ? 'item-asc' : 'item-desc')
+                  : sortBy === 'date'
+                    ? (sortOrder === 'desc' ? 'date-desc' : 'date-asc')
+                    : 'item-asc'
+              }
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === 'item-asc') {
+                  setSortBy('itemNumber');
+                  setSortOrder('asc');
+                } else if (val === 'item-desc') {
+                  setSortBy('itemNumber');
+                  setSortOrder('desc');
+                } else if (val === 'date-desc') {
+                  setSortBy('date');
+                  setSortOrder('desc');
+                } else if (val === 'date-asc') {
+                  setSortBy('date');
+                  setSortOrder('asc');
+                }
+              }}
+              className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer"
+              title="Ordenar por ítem o por fecha"
+            >
+              <option value="item-asc">🔢 Ordenar por ítem (1 → 470)</option>
+              <option value="item-desc">🔢 Ordenar por ítem (470 → 1)</option>
+              <option value="date-desc">📅 Fecha: más reciente a más lejana</option>
+              <option value="date-asc">📅 Fecha: más lejana a reciente</option>
+            </select>
+
             {/* Botón limpiar filtros */}
             {hasActiveFilters && (
               <button
@@ -367,17 +414,111 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
             <thead>
               <tr className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
                 <th 
-                  className="py-3 px-3 text-center w-12 cursor-pointer hover:bg-slate-200/70 dark:hover:bg-slate-700/60 transition"
-                  onClick={() => {
-                    setSortBy('itemNumber');
-                    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-                  }}
-                  title="Ordenar por ítem"
+                  className="py-3 px-3 text-center min-w-[85px] relative select-none"
+                  title="Ordenar por ítem o por fecha"
                 >
                   <div className="flex items-center justify-center gap-1">
-                    <span>#</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (sortBy === 'itemNumber') {
+                          setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+                        } else {
+                          setSortBy('itemNumber');
+                          setSortOrder('asc');
+                        }
+                      }}
+                      className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
+                      title={sortBy === 'itemNumber' ? `Ítem: ${sortOrder === 'asc' ? '1 a 470' : '470 a 1'}` : 'Ordenar por ítem'}
+                    >
+                      <span>#</span>
+                      <ArrowUpDown className={`w-3 h-3 ${sortBy === 'itemNumber' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                      {sortBy === 'itemNumber' && (
+                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                          {sortOrder === 'asc' ? '1→N' : 'N→1'}
+                        </span>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsSortMenuOpen(prev => !prev);
+                      }}
+                      className="p-1 rounded-sm hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition cursor-pointer"
+                      title="Menú de ordenamiento: Ítem o Fecha"
+                    >
+                      <ChevronDown className="w-3 h-3" />
+                    </button>
                   </div>
+
+                  {/* Menú flotante de opciones de ordenamiento */}
+                  {isSortMenuOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-20 cursor-default" 
+                        onClick={() => setIsSortMenuOpen(false)} 
+                      />
+                      <div 
+                        className="absolute top-full left-0 mt-1 z-30 w-64 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl py-1 text-left text-xs font-normal"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 dark:border-slate-700/60">
+                          Opciones de Ordenamiento
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSortBy('itemNumber');
+                            setSortOrder('asc');
+                            setIsSortMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer ${sortBy === 'itemNumber' && sortOrder === 'asc' ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-blue-950/30' : 'text-slate-700 dark:text-slate-200'}`}
+                        >
+                          <span>🔢 Por ítem (1 a 470)</span>
+                          {sortBy === 'itemNumber' && sortOrder === 'asc' && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSortBy('itemNumber');
+                            setSortOrder('desc');
+                            setIsSortMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer ${sortBy === 'itemNumber' && sortOrder === 'desc' ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-blue-950/30' : 'text-slate-700 dark:text-slate-200'}`}
+                        >
+                          <span>🔢 Por ítem (470 a 1)</span>
+                          {sortBy === 'itemNumber' && sortOrder === 'desc' && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                        <div className="border-t border-slate-100 dark:border-slate-700/60 my-1" />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSortBy('date');
+                            setSortOrder('desc');
+                            setIsSortMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer ${sortBy === 'date' && sortOrder === 'desc' ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-blue-950/30' : 'text-slate-700 dark:text-slate-200'}`}
+                        >
+                          <span>📅 Fecha: Más reciente a más lejana</span>
+                          {sortBy === 'date' && sortOrder === 'desc' && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSortBy('date');
+                            setSortOrder('asc');
+                            setIsSortMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer ${sortBy === 'date' && sortOrder === 'asc' ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-blue-950/30' : 'text-slate-700 dark:text-slate-200'}`}
+                        >
+                          <span>📅 Fecha: Más lejana a reciente</span>
+                          {sortBy === 'date' && sortOrder === 'asc' && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </th>
                 <th className="py-3 px-3 min-w-[90px]">Municipio</th>
                 <th 
@@ -394,16 +535,29 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                   </div>
                 </th>
                 <th 
-                  className="py-3 px-3 min-w-[130px] cursor-pointer hover:bg-slate-200/70 dark:hover:bg-slate-700/60 transition"
+                  className="py-3 px-3 min-w-[130px] cursor-pointer hover:bg-slate-200/70 dark:hover:bg-slate-700/60 transition select-none"
                   onClick={() => {
-                    setSortBy('date');
-                    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+                    if (sortBy === 'date') {
+                      setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
+                    } else {
+                      setSortBy('date');
+                      setSortOrder('desc'); // Por defecto más reciente a más lejana
+                    }
                   }}
-                  title="Ordenar por fecha de calendario"
+                  title={sortBy === 'date'
+                    ? (sortOrder === 'desc' 
+                        ? 'Fecha: Más reciente a más lejana (clic para ordenar de más lejana a reciente)' 
+                        : 'Fecha: Más lejana a reciente (clic para ordenar de más reciente a más lejana)')
+                    : 'Ordenar por fecha: Más reciente a más lejana'}
                 >
                   <div className="flex items-center gap-1">
                     <span>Fecha Real</span>
-                    <ArrowUpDown className="w-3 h-3 text-slate-400" />
+                    <ArrowUpDown className={`w-3 h-3 ${sortBy === 'date' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
+                    {sortBy === 'date' && (
+                      <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                        {sortOrder === 'desc' ? '↓ Reciente' : '↑ Lejana'}
+                      </span>
+                    )}
                   </div>
                 </th>
                 <th className="py-3 px-3 min-w-[130px]">Jornada & Audiencia</th>
@@ -475,7 +629,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                     >
                       {/* Ítem */}
                       <td className="py-2.5 px-3 text-center font-bold text-slate-600 dark:text-slate-400">
-                        {session.itemNumber || idx + 1}
+                        {idx + 1}
                       </td>
 
                       {/* Municipio */}
