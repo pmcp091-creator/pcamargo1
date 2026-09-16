@@ -43,7 +43,7 @@ export const generateDirectPDF = async ({
   const pdfHeight = isLegal ? 330.2 : 279.4; // mm
 
   const opt = {
-    margin: [10, 10, 10, 10], // márgenes en mm
+    margin: [8, 8, 8, 8], // márgenes en mm (compactos)
     filename: getExportFileName(restrictedInstName, 'pdf'),
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { 
@@ -56,6 +56,10 @@ export const generateDirectPDF = async ({
       unit: 'mm', 
       format: paperOrientation === 'landscape' ? [pdfHeight, pdfWidth] : [pdfWidth, pdfHeight], 
       orientation: paperOrientation 
+    },
+    pagebreak: {
+      mode: ['css', 'legacy'],
+      avoid: ['tr', '.avoid-break', '.print-kpis', '.print-header']
     }
   };
 

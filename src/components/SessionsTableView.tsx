@@ -12,6 +12,7 @@ import {
   Filter, 
   Download, 
   FileSpreadsheet, 
+  Printer,
   Edit3, 
   Copy, 
   Trash2, 
@@ -44,6 +45,8 @@ export interface SessionsTableViewProps {
   onOpenNewSession?: () => void;
   onExportHTML?: () => void;
   onExportExcel?: (selectedInsts?: string[], sortBy?: SessionSortField, sortOrder?: SortOrder) => void;
+  onPrint?: (sessionsToPrint?: TrainingSession[], title?: string, period?: string) => void;
+  onDisplayedSessionsChange?: (sessions: TrainingSession[]) => void;
 }
 
 export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
@@ -65,7 +68,9 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
   onOpenQuickAssign,
   onOpenNewSession,
   onExportHTML,
-  onExportExcel
+  onExportExcel,
+  onPrint,
+  onDisplayedSessionsChange
 }) => {
   const isAdmin = sessionRole === 'admin';
   const [searchTerm, setSearchTerm] = useState('');
@@ -110,11 +115,16 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
     return sortSessions(filtered, sortBy, sortOrder);
   }, [filteredSessions, searchTerm, selectedStatus, sortBy, sortOrder]);
 
-  // Métricas calculadas sobre filteredSessions
-  const totalCount = filteredSessions.length;
-  const presencialCount = filteredSessions.filter(s => s.modality === 'Presencial').length;
-  const virtualCount = filteredSessions.filter(s => s.modality === 'Virtual').length;
-  const approvedCount = filteredSessions.filter(s => s.status === 'APROBADO').length;
+  // Notificar al contenedor principal sobre las sesiones filtradas en pantalla
+  useEffect(() => {
+    onDisplayedSessionsChange?.(displayedSessions);
+  }, [displayedSessions, onDisplayedSessionsChange]);
+
+  // Métricas calculadas sobre displayedSessions (reflejan estrictamente los filtros de pantalla)
+  const totalCount = displayedSessions.length;
+  const presencialCount = displayedSessions.filter(s => s.modality === 'Presencial').length;
+  const virtualCount = displayedSessions.filter(s => s.modality === 'Virtual').length;
+  const approvedCount = displayedSessions.filter(s => s.status === 'APROBADO').length;
 
   const handleResetFilters = () => {
     setSelectedMunicipality('all');
@@ -192,6 +202,24 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
               >
                 <FileSpreadsheet className="w-4 h-4" />
                 <span>Exportar Excel ({totalCount})</span>
+              </button>
+            )}
+
+            {onPrint && (
+              <button
+                type="button"
+                id="btn-table-print-pdf"
+                onClick={() => {
+                  const title = selectedInstitution !== 'all'
+                    ? `CRONOGRAMA OFICIAL CONCERTADO — ${selectedInstitution.toUpperCase()}`
+                    : undefined;
+                  onPrint(displayedSessions, title);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                title="Imprimir o generar PDF oficial con las sesiones filtradas en pantalla"
+              >
+                <Printer className="w-4 h-4 text-amber-400" />
+                <span>Imprimir / PDF ({totalCount})</span>
               </button>
             )}
 

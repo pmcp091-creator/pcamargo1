@@ -1046,6 +1046,16 @@ export default function App() {
                 onOpenNewSession={handleOpenNewSession}
                 onExportHTML={() => exportToHTML(filteredSessions, branding)}
                 onExportExcel={(selectedInsts, sortBy, sortOrder) => handleExportExcel(selectedInsts, sortBy, sortOrder)}
+                onPrint={(targetSessions, title, period) => {
+                  if (targetSessions) {
+                    setPrintCustomSessions(targetSessions);
+                    setPrintCustomTitle(title || null);
+                    setPrintPeriodLabel(period || null);
+                    setIsPrintView(true);
+                  } else {
+                    setShowPrintOptionsModal(true);
+                  }
+                }}
               />
             )}
 
