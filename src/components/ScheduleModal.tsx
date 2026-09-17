@@ -678,7 +678,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
                     type="text"
                     value={customGradeName}
                     onChange={e => setCustomGradeName(e.target.value)}
-                    placeholder="Ej. Grado 8° o Ciclo 5"
+                    placeholder="Ej. 9-03, 10-01, Grado 8° o Ciclo 5"
                     className="flex-1 text-xs p-2 border border-amber-400 rounded-lg"
                   />
                   <button

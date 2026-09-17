@@ -8,6 +8,9 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { generateDirectPDF } from '../utils/pdfExport';
+import { getSessionDateForSort, parseTimeToMinutes } from '../utils/sorting';
+
+export { getSessionDateForSort, parseTimeToMinutes };
 
 export const getExportSessionStatus = (session: TrainingSession): string => {
   return session.status || 'APROBADO';
@@ -40,73 +43,6 @@ export interface PrintScheduleViewProps {
   restrictedInstName?: string | null;
 }
 
-// Resuelve la fecha y timestamp para ordenamiento cronológico riguroso
-export function getSessionDateForSort(session: TrainingSession): { dateStr: string; timestamp: number } {
-  if (session.specificDate && /^\d{4}-\d{2}-\d{2}$/.test(session.specificDate)) {
-    return { dateStr: session.specificDate, timestamp: new Date(session.specificDate + 'T00:00:00').getTime() };
-  }
-  if (session.date && /^\d{4}-\d{2}-\d{2}$/.test(session.date)) {
-    return { dateStr: session.date, timestamp: new Date(session.date + 'T00:00:00').getTime() };
-  }
-  if (session.specificDates && Array.isArray(session.specificDates) && session.specificDates.length > 0) {
-    const sorted = [...session.specificDates].filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
-    if (sorted.length > 0) {
-      return { dateStr: sorted[0], timestamp: new Date(sorted[0] + 'T00:00:00').getTime() };
-    }
-  }
-  if (session.datesScheduled) {
-    const monthMap: Record<string, string> = {
-      september: '2026-09',
-      october: '2026-10',
-      november: '2026-11',
-      december: '2026-12'
-    };
-    for (const [mName, mPrefix] of Object.entries(monthMap)) {
-      const days = session.datesScheduled[mName as keyof typeof session.datesScheduled];
-      if (days && days.length > 0) {
-        const sortedDays = [...days].map(d => parseInt(d, 10)).filter(n => !isNaN(n)).sort((a, b) => a - b);
-        if (sortedDays.length > 0) {
-          const dStr = `${mPrefix}-${String(sortedDays[0]).padStart(2, '0')}`;
-          return { dateStr: dStr, timestamp: new Date(dStr + 'T00:00:00').getTime() };
-        }
-      }
-    }
-  }
-  if (session.daysOfWeek && session.daysOfWeek.length > 0) {
-    const dayMap: Record<string, string> = {
-      'lunes': '2026-09-14',
-      'martes': '2026-09-15',
-      'miércoles': '2026-09-16',
-      'miercoles': '2026-09-16',
-      'jueves': '2026-09-17',
-      'viernes': '2026-09-18',
-      'sábado': '2026-09-19',
-      'sabado': '2026-09-19',
-      'domingo': '2026-09-20'
-    };
-    const key = session.daysOfWeek[0].toLowerCase();
-    if (dayMap[key]) {
-      return { dateStr: dayMap[key], timestamp: new Date(dayMap[key] + 'T00:00:00').getTime() };
-    }
-  }
-  return { dateStr: '9999-99-99', timestamp: 9999999999999 };
-}
-
-// Convierte cadena de hora '07:00 AM' a minutos desde la medianoche para ordenar
-export function parseTimeToMinutes(timeStr?: string): number {
-  if (!timeStr) return 0;
-  const clean = timeStr.trim().toUpperCase();
-  const isPM = clean.includes('PM');
-  const isAM = clean.includes('AM');
-  const match = clean.match(/(\d{1,2}):(\d{2})/);
-  if (!match) return 0;
-  let hours = parseInt(match[1], 10);
-  const minutes = parseInt(match[2], 10);
-  if (isPM && hours < 12) hours += 12;
-  if (isAM && hours === 12) hours = 0;
-  return hours * 60 + minutes;
-}
-
 // Formatea la fecha y día legible en español
 export function formatSessionDateDisplay(session: TrainingSession): { dayName: string; dateFormatted: string; isDated: boolean } {
   const { dateStr } = getSessionDateForSort(session);
@@ -126,6 +62,25 @@ export function formatSessionDateDisplay(session: TrainingSession): { dayName: s
     dateFormatted: session.date || '',
     isDated: false
   };
+}
+
+// Formatea el grado / ciclo de los estudiantes para visualización en la columna Formación y Audiencia
+export function formatStudentGradeDisplay(gradeOrCycle?: string, targetAudience?: string): string | null {
+  if (!gradeOrCycle || !gradeOrCycle.trim()) {
+    if (targetAudience === 'Docentes') return 'Docentes';
+    return null;
+  }
+  let clean = gradeOrCycle.trim();
+  // Quitar prefijo redundante "Estudiantes" (ej. "Estudiantes Ciclo 4 / Grado 9" -> "Ciclo 4 / Grado 9")
+  clean = clean.replace(/^Estudiantes\s*(\/|-)?\s*/i, '');
+  if (!clean) return null;
+
+  // Si ya contiene la palabra grado, grados, ciclo, docentes o cuerpo
+  if (/^(grado|grados|ciclo|docente|cuerpo)/i.test(clean)) {
+    return clean;
+  }
+  // Si es un curso/grupo específico, ej: "9-03", "903", "10-01", "11°"
+  return `Grado ${clean}`;
 }
 
 export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
@@ -180,6 +135,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
   }, [sessions]);
 
   // Ordenamiento cronológico estricto: Fechas más cercanas / del día actual arriba, lejanas abajo
+  // Y dentro de cada día: horas AM temprano arriba hasta horas PM más tarde abajo
   const sortedSessions = useMemo(() => {
     return [...sessions].sort((a, b) => {
       // 1. Fecha cronológica
@@ -188,14 +144,18 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
       if (dateA.timestamp !== dateB.timestamp) {
         return dateA.timestamp - dateB.timestamp;
       }
-      // 2. Horario dentro del mismo día (más temprano primero)
-      const timeA = parseTimeToMinutes(a.startTime);
-      const timeB = parseTimeToMinutes(b.startTime);
+      // 2. Horario dentro del mismo día (más temprano primero: 06:00 AM, 07:00 AM ... 12:00 m. ... 02:30 PM ... 05:00 PM)
+      const timeA = parseTimeToMinutes(a.startTime, a.academicShift);
+      const timeB = parseTimeToMinutes(b.startTime, b.academicShift);
       if (timeA !== timeB) {
         return timeA - timeB;
       }
       // 3. Desempate por número de ítem
-      return (a.itemNumber || 0) - (b.itemNumber || 0);
+      if ((a.itemNumber || 0) !== (b.itemNumber || 0)) {
+        return (a.itemNumber || 0) - (b.itemNumber || 0);
+      }
+      // 4. Institución alfabética
+      return (a.institution || '').localeCompare(b.institution || '');
     });
   }, [sessions]);
 
@@ -440,14 +400,14 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                   <thead>
                     <tr className="bg-slate-900 text-white font-bold border-b border-slate-400">
                       <th className="py-1 px-1 text-center w-7 border-r border-slate-700">#</th>
-                      <th className="py-1 px-1.5 w-22 border-r border-slate-700">Fecha / Día</th>
-                      <th className="py-1 px-1.5 w-22 border-r border-slate-700">Horario</th>
+                      <th className="py-1 px-1.5 w-20 border-r border-slate-700">Fecha / Día</th>
+                      <th className="py-1 px-1.5 w-20 border-r border-slate-700">Horario</th>
                       <th className="py-1 px-1.5 w-16 border-r border-slate-700">Municipio</th>
-                      <th className="py-1 px-1.5 min-w-[130px] border-r border-slate-700">Institución / Sede</th>
-                      <th className="py-1 px-1.5 min-w-[120px] border-r border-slate-700">Formación / Audiencia</th>
-                      <th className="py-1 px-1 text-center w-18 border-r border-slate-700">Modalidad</th>
-                      <th className="py-1 px-1 text-center w-18 border-r border-slate-700">Estado</th>
-                      <th className="py-1 px-1.5 min-w-[120px]">Observaciones y Responsable</th>
+                      <th className="py-1 px-1.5 min-w-[125px] border-r border-slate-700">Institución / Sede</th>
+                      <th className="py-1 px-1.5 min-w-[155px] border-r border-slate-700">Formación y Audiencia</th>
+                      <th className="py-1 px-1 text-center w-16 border-r border-slate-700">Modalidad</th>
+                      <th className="py-1 px-1 text-center w-16 border-r border-slate-700">Estado</th>
+                      <th className="py-1 px-1.5 min-w-[110px]">Observaciones y Responsable</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -458,6 +418,9 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                       const prevDateStr = sIdx > 0 ? getSessionDateForSort(sortedSessions[sIdx - 1]).dateStr : null;
                       const isNewDateHeader = dateStr !== prevDateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr) && dateStr !== '9999-99-99';
                       const { dayName, dateFormatted } = formatSessionDateDisplay(session);
+                      const displayGrade = formatStudentGradeDisplay(session.gradeOrCycle, session.targetAudience);
+                      const isDocentes = session.targetAudience === 'Docentes';
+                      const showGradeBadge = displayGrade && (!isDocentes || !/^(docentes|cuerpo docente)$/i.test(displayGrade));
 
                       return (
                         <React.Fragment key={session.id || `${dateStr}-${sIdx}`}>
@@ -504,12 +467,25 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                                 </div>
                               )}
                             </td>
+                            {/* Formación y Audiencia (con grado de estudiantes en la misma columna) */}
                             <td className="py-1 px-1.5 border-r border-slate-200">
-                              <div className="font-semibold text-slate-900 leading-tight">
+                              <div className="font-bold text-slate-900 leading-tight">
                                 {session.trainingType || session.topic || 'Formación Vocacional'}
                               </div>
-                              <div className="text-[8px] text-slate-500">
-                                Audiencia: <strong className="text-slate-700">{session.targetAudience}</strong>
+                              {session.topic && session.trainingType && session.topic !== session.trainingType && (
+                                <div className="text-[7.5px] text-slate-500 font-normal italic truncate max-w-[160px]" title={session.topic}>
+                                  Tema: {session.topic}
+                                </div>
+                              )}
+                              <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[8px] print:text-[7.5px]">
+                                <span className="text-slate-600 font-medium">
+                                  Audiencia: <strong className="text-slate-800">{session.targetAudience}</strong>
+                                </span>
+                                {showGradeBadge && (
+                                  <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-950 border border-indigo-200 font-extrabold text-[7.5px] print:text-[7px]">
+                                    🎓 {displayGrade}
+                                  </span>
+                                )}
                               </div>
                             </td>
                             <td className="py-1 px-1 border-r border-slate-200 text-center whitespace-nowrap">
