@@ -64,25 +64,6 @@ export function formatSessionDateDisplay(session: TrainingSession): { dayName: s
   };
 }
 
-// Formatea el grado / ciclo de los estudiantes para visualización en la columna Formación y Audiencia
-export function formatStudentGradeDisplay(gradeOrCycle?: string, targetAudience?: string): string | null {
-  if (!gradeOrCycle || !gradeOrCycle.trim()) {
-    if (targetAudience === 'Docentes') return 'Docentes';
-    return null;
-  }
-  let clean = gradeOrCycle.trim();
-  // Quitar prefijo redundante "Estudiantes" (ej. "Estudiantes Ciclo 4 / Grado 9" -> "Ciclo 4 / Grado 9")
-  clean = clean.replace(/^Estudiantes\s*(\/|-)?\s*/i, '');
-  if (!clean) return null;
-
-  // Si ya contiene la palabra grado, grados, ciclo, docentes o cuerpo
-  if (/^(grado|grados|ciclo|docente|cuerpo)/i.test(clean)) {
-    return clean;
-  }
-  // Si es un curso/grupo específico, ej: "9-03", "903", "10-01", "11°"
-  return `Grado ${clean}`;
-}
-
 export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
   sessions,
   branding,
@@ -400,14 +381,14 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                   <thead>
                     <tr className="bg-slate-900 text-white font-bold border-b border-slate-400">
                       <th className="py-1 px-1 text-center w-7 border-r border-slate-700">#</th>
-                      <th className="py-1 px-1.5 w-20 border-r border-slate-700">Fecha / Día</th>
-                      <th className="py-1 px-1.5 w-20 border-r border-slate-700">Horario</th>
+                      <th className="py-1 px-1.5 w-22 border-r border-slate-700">Fecha / Día</th>
+                      <th className="py-1 px-1.5 w-22 border-r border-slate-700">Horario</th>
                       <th className="py-1 px-1.5 w-16 border-r border-slate-700">Municipio</th>
-                      <th className="py-1 px-1.5 min-w-[125px] border-r border-slate-700">Institución / Sede</th>
-                      <th className="py-1 px-1.5 min-w-[155px] border-r border-slate-700">Formación y Audiencia</th>
-                      <th className="py-1 px-1 text-center w-16 border-r border-slate-700">Modalidad</th>
-                      <th className="py-1 px-1 text-center w-16 border-r border-slate-700">Estado</th>
-                      <th className="py-1 px-1.5 min-w-[110px]">Observaciones y Responsable</th>
+                      <th className="py-1 px-1.5 min-w-[130px] border-r border-slate-700">Institución / Sede</th>
+                      <th className="py-1 px-1.5 min-w-[120px] border-r border-slate-700">Formación / Audiencia</th>
+                      <th className="py-1 px-1 text-center w-18 border-r border-slate-700">Modalidad</th>
+                      <th className="py-1 px-1 text-center w-18 border-r border-slate-700">Estado</th>
+                      <th className="py-1 px-1.5 min-w-[120px]">Observaciones y Responsable</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -418,9 +399,6 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                       const prevDateStr = sIdx > 0 ? getSessionDateForSort(sortedSessions[sIdx - 1]).dateStr : null;
                       const isNewDateHeader = dateStr !== prevDateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr) && dateStr !== '9999-99-99';
                       const { dayName, dateFormatted } = formatSessionDateDisplay(session);
-                      const displayGrade = formatStudentGradeDisplay(session.gradeOrCycle, session.targetAudience);
-                      const isDocentes = session.targetAudience === 'Docentes';
-                      const showGradeBadge = displayGrade && (!isDocentes || !/^(docentes|cuerpo docente)$/i.test(displayGrade));
 
                       return (
                         <React.Fragment key={session.id || `${dateStr}-${sIdx}`}>
@@ -467,25 +445,12 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                                 </div>
                               )}
                             </td>
-                            {/* Formación y Audiencia (con grado de estudiantes en la misma columna) */}
                             <td className="py-1 px-1.5 border-r border-slate-200">
-                              <div className="font-bold text-slate-900 leading-tight">
+                              <div className="font-semibold text-slate-900 leading-tight">
                                 {session.trainingType || session.topic || 'Formación Vocacional'}
                               </div>
-                              {session.topic && session.trainingType && session.topic !== session.trainingType && (
-                                <div className="text-[7.5px] text-slate-500 font-normal italic truncate max-w-[160px]" title={session.topic}>
-                                  Tema: {session.topic}
-                                </div>
-                              )}
-                              <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[8px] print:text-[7.5px]">
-                                <span className="text-slate-600 font-medium">
-                                  Audiencia: <strong className="text-slate-800">{session.targetAudience}</strong>
-                                </span>
-                                {showGradeBadge && (
-                                  <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-950 border border-indigo-200 font-extrabold text-[7.5px] print:text-[7px]">
-                                    🎓 {displayGrade}
-                                  </span>
-                                )}
+                              <div className="text-[8px] text-slate-500">
+                                Audiencia: <strong className="text-slate-700">{session.targetAudience}</strong>
                               </div>
                             </td>
                             <td className="py-1 px-1 border-r border-slate-200 text-center whitespace-nowrap">
