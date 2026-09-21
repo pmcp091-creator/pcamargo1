@@ -8,9 +8,6 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { generateDirectPDF } from '../utils/pdfExport';
-import { getSessionDateForSort, parseTimeToMinutes } from '../utils/sorting';
-
-export { getSessionDateForSort, parseTimeToMinutes };
 
 export const getExportSessionStatus = (session: TrainingSession): string => {
   return session.status || 'APROBADO';
@@ -41,6 +38,73 @@ export interface PrintScheduleViewProps {
     signatures?: boolean;
   };
   restrictedInstName?: string | null;
+}
+
+// Resuelve la fecha y timestamp para ordenamiento cronológico riguroso
+export function getSessionDateForSort(session: TrainingSession): { dateStr: string; timestamp: number } {
+  if (session.specificDate && /^\d{4}-\d{2}-\d{2}$/.test(session.specificDate)) {
+    return { dateStr: session.specificDate, timestamp: new Date(session.specificDate + 'T00:00:00').getTime() };
+  }
+  if (session.date && /^\d{4}-\d{2}-\d{2}$/.test(session.date)) {
+    return { dateStr: session.date, timestamp: new Date(session.date + 'T00:00:00').getTime() };
+  }
+  if (session.specificDates && Array.isArray(session.specificDates) && session.specificDates.length > 0) {
+    const sorted = [...session.specificDates].filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)).sort();
+    if (sorted.length > 0) {
+      return { dateStr: sorted[0], timestamp: new Date(sorted[0] + 'T00:00:00').getTime() };
+    }
+  }
+  if (session.datesScheduled) {
+    const monthMap: Record<string, string> = {
+      september: '2026-09',
+      october: '2026-10',
+      november: '2026-11',
+      december: '2026-12'
+    };
+    for (const [mName, mPrefix] of Object.entries(monthMap)) {
+      const days = session.datesScheduled[mName as keyof typeof session.datesScheduled];
+      if (days && days.length > 0) {
+        const sortedDays = [...days].map(d => parseInt(d, 10)).filter(n => !isNaN(n)).sort((a, b) => a - b);
+        if (sortedDays.length > 0) {
+          const dStr = `${mPrefix}-${String(sortedDays[0]).padStart(2, '0')}`;
+          return { dateStr: dStr, timestamp: new Date(dStr + 'T00:00:00').getTime() };
+        }
+      }
+    }
+  }
+  if (session.daysOfWeek && session.daysOfWeek.length > 0) {
+    const dayMap: Record<string, string> = {
+      'lunes': '2026-09-14',
+      'martes': '2026-09-15',
+      'miércoles': '2026-09-16',
+      'miercoles': '2026-09-16',
+      'jueves': '2026-09-17',
+      'viernes': '2026-09-18',
+      'sábado': '2026-09-19',
+      'sabado': '2026-09-19',
+      'domingo': '2026-09-20'
+    };
+    const key = session.daysOfWeek[0].toLowerCase();
+    if (dayMap[key]) {
+      return { dateStr: dayMap[key], timestamp: new Date(dayMap[key] + 'T00:00:00').getTime() };
+    }
+  }
+  return { dateStr: '9999-99-99', timestamp: 9999999999999 };
+}
+
+// Convierte cadena de hora '07:00 AM' a minutos desde la medianoche para ordenar
+export function parseTimeToMinutes(timeStr?: string): number {
+  if (!timeStr) return 0;
+  const clean = timeStr.trim().toUpperCase();
+  const isPM = clean.includes('PM');
+  const isAM = clean.includes('AM');
+  const match = clean.match(/(\d{1,2}):(\d{2})/);
+  if (!match) return 0;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  if (isPM && hours < 12) hours += 12;
+  if (isAM && hours === 12) hours = 0;
+  return hours * 60 + minutes;
 }
 
 // Formatea la fecha y día legible en español
@@ -116,7 +180,6 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
   }, [sessions]);
 
   // Ordenamiento cronológico estricto: Fechas más cercanas / del día actual arriba, lejanas abajo
-  // Y dentro de cada día: horas AM temprano arriba hasta horas PM más tarde abajo
   const sortedSessions = useMemo(() => {
     return [...sessions].sort((a, b) => {
       // 1. Fecha cronológica
@@ -125,18 +188,14 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
       if (dateA.timestamp !== dateB.timestamp) {
         return dateA.timestamp - dateB.timestamp;
       }
-      // 2. Horario dentro del mismo día (más temprano primero: 06:00 AM, 07:00 AM ... 12:00 m. ... 02:30 PM ... 05:00 PM)
-      const timeA = parseTimeToMinutes(a.startTime, a.academicShift);
-      const timeB = parseTimeToMinutes(b.startTime, b.academicShift);
+      // 2. Horario dentro del mismo día (más temprano primero)
+      const timeA = parseTimeToMinutes(a.startTime);
+      const timeB = parseTimeToMinutes(b.startTime);
       if (timeA !== timeB) {
         return timeA - timeB;
       }
       // 3. Desempate por número de ítem
-      if ((a.itemNumber || 0) !== (b.itemNumber || 0)) {
-        return (a.itemNumber || 0) - (b.itemNumber || 0);
-      }
-      // 4. Institución alfabética
-      return (a.institution || '').localeCompare(b.institution || '');
+      return (a.itemNumber || 0) - (b.itemNumber || 0);
     });
   }, [sessions]);
 

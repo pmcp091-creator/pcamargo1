@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { TrainingSession, Municipality, Modality, InstitutionProfile } from '../types/schedule';
 import { deduplicateSessions } from '../App';
-import { parseTimeToMinutes } from '../utils/sorting';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -351,56 +350,33 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     return { weekDates: dates, weekRangeLabel: label };
   }, [viewMode, weekStartDate, selectedDateObj]);
 
-  // Formaciones filtradas del Día Actual seleccionado (ordenadas AM -> PM)
+  // Formaciones filtradas del Día Actual seleccionado
   const currentDaySessions = useMemo(() => {
     const dayName = DAYS_HEADER[selectedDateObj.getDay()];
     const dayNumber = selectedDateObj.getDate();
     const raw = getSessionsForDate(selectedDate, dayName, dayNumber);
-    return raw
-      .filter((session, idx, self) => 
-        idx === self.findIndex(s => (s.id ? s.id === session.id : `${s.institution}-${s.date}-${s.startTime}-${s.topic}` === `${session.institution}-${session.date}-${session.startTime}-${session.topic}`))
-      )
-      .map(s => ({
-        ...s,
-        specificDate: selectedDate,
-        date: selectedDate
-      }))
-      .sort((a, b) => {
-        const timeA = parseTimeToMinutes(a.startTime, a.academicShift);
-        const timeB = parseTimeToMinutes(b.startTime, b.academicShift);
-        if (timeA !== timeB) return timeA - timeB;
-        return (a.itemNumber || 0) - (b.itemNumber || 0);
-      });
+    return raw.filter((session, idx, self) => 
+      idx === self.findIndex(s => (s.id ? s.id === session.id : `${s.institution}-${s.date}-${s.startTime}-${s.topic}` === `${session.institution}-${session.date}-${session.startTime}-${session.topic}`))
+    ).map(s => ({
+      ...s,
+      specificDate: s.specificDate || selectedDate
+    }));
   }, [selectedDate, selectedDateObj, getSessionsForDate]);
 
-  // Formaciones filtradas de la Semana Completa (Lunes a Sábado, ordenadas día a día y AM -> PM dentro de cada día)
+  // Formaciones filtradas de la Semana Completa (Lunes a Sábado)
   const currentWeekSessions = useMemo(() => {
     const collected: TrainingSession[] = [];
     weekDates.forEach(wd => {
       const daySessions = getSessionsForDate(wd.dateStr, wd.dayName, wd.dayNumber);
-      // Pre-ordenar las formaciones de este día específico por hora: AM temprano arriba, PM tarde abajo
-      const sortedDaySessions = [...daySessions].sort((a, b) => {
-        const timeA = parseTimeToMinutes(a.startTime, a.academicShift);
-        const timeB = parseTimeToMinutes(b.startTime, b.academicShift);
-        if (timeA !== timeB) return timeA - timeB;
-        return (a.itemNumber || 0) - (b.itemNumber || 0);
-      });
-
-      sortedDaySessions.forEach(s => {
-        // Evitar duplicados dentro del MISMO día
-        const existsInThisDay = collected.some(ex => 
-          (ex.specificDate === wd.dateStr || ex.date === wd.dateStr) &&
-          (
-            (ex.id && s.id && (ex.id === s.id || ex.id === `${s.id}-${wd.dateStr}`)) ||
-            (ex.institution === s.institution && ex.startTime === s.startTime && ex.topic === s.topic)
-          )
+      daySessions.forEach(s => {
+        const exists = collected.some(ex => 
+          (ex.id && s.id && ex.id === s.id) || 
+          (ex.institution === s.institution && (ex.specificDate || ex.date) === wd.dateStr && ex.startTime === s.startTime && ex.topic === s.topic)
         );
-        if (!existsInThisDay) {
+        if (!exists) {
           collected.push({
             ...s,
-            id: s.id ? `${s.id}-${wd.dateStr}` : `sess-${wd.dateStr}-${collected.length}`,
-            specificDate: wd.dateStr,
-            date: wd.dateStr
+            specificDate: s.specificDate || wd.dateStr
           });
         }
       });
