@@ -61,6 +61,18 @@ const DAYS_HEADER = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Vier
 const WEEKDAYS_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const WEEKDAYS_SHORT_7 = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
+export const getStartMinutes = (item: any): number => {
+  const raw = item.startTime || item.time || item.horario || item.timeRange || '';
+  const match = raw.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!match) return 9999;
+  let hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  const meridian = (match[3] || '').toUpperCase();
+  if (meridian === 'PM' && hours < 12) hours += 12;
+  if (meridian === 'AM' && hours === 12) hours = 0;
+  return hours * 60 + minutes;
+};
+
 export const CalendarView: React.FC<CalendarViewProps> = ({
   sessions,
   filteredSessions: propFilteredSessions,
@@ -355,12 +367,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const dayName = DAYS_HEADER[selectedDateObj.getDay()];
     const dayNumber = selectedDateObj.getDate();
     const raw = getSessionsForDate(selectedDate, dayName, dayNumber);
-    return raw.filter((session, idx, self) => 
+    const daySessions = raw.filter((session, idx, self) => 
       idx === self.findIndex(s => (s.id ? s.id === session.id : `${s.institution}-${s.date}-${s.startTime}-${s.topic}` === `${session.institution}-${session.date}-${session.startTime}-${session.topic}`))
     ).map(s => ({
       ...s,
       specificDate: s.specificDate || selectedDate
     }));
+    const sortedDaySessions = [...daySessions].sort((a, b) => getStartMinutes(a) - getStartMinutes(b));
+    return sortedDaySessions;
   }, [selectedDate, selectedDateObj, getSessionsForDate]);
 
   // Formaciones filtradas de la Semana Completa (Lunes a Sábado)
@@ -368,7 +382,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     const collected: TrainingSession[] = [];
     weekDates.forEach(wd => {
       const daySessions = getSessionsForDate(wd.dateStr, wd.dayName, wd.dayNumber);
-      daySessions.forEach(s => {
+      const sortedDaySessions = [...daySessions].sort((a, b) => getStartMinutes(a) - getStartMinutes(b));
+      sortedDaySessions.forEach(s => {
         const exists = collected.some(ex => 
           (ex.id && s.id && ex.id === s.id) || 
           (ex.institution === s.institution && (ex.specificDate || ex.date) === wd.dateStr && ex.startTime === s.startTime && ex.topic === s.topic)

@@ -92,19 +92,22 @@ export function getSessionDateForSort(session: TrainingSession): { dateStr: stri
   return { dateStr: '9999-99-99', timestamp: 9999999999999 };
 }
 
-// Convierte cadena de hora '07:00 AM' a minutos desde la medianoche para ordenar
-export function parseTimeToMinutes(timeStr?: string): number {
-  if (!timeStr) return 0;
-  const clean = timeStr.trim().toUpperCase();
-  const isPM = clean.includes('PM');
-  const isAM = clean.includes('AM');
-  const match = clean.match(/(\d{1,2}):(\d{2})/);
-  if (!match) return 0;
+// Convierte cualquier formato de hora a minutos del día (de 0 a 1440) para orden cronológico real AM a PM
+export const getStartMinutes = (item: any): number => {
+  const raw = item.startTime || item.time || item.horario || item.timeRange || '';
+  const match = raw.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!match) return 9999;
   let hours = parseInt(match[1], 10);
   const minutes = parseInt(match[2], 10);
-  if (isPM && hours < 12) hours += 12;
-  if (isAM && hours === 12) hours = 0;
+  const meridian = (match[3] || '').toUpperCase();
+  if (meridian === 'PM' && hours < 12) hours += 12;
+  if (meridian === 'AM' && hours === 12) hours = 0;
   return hours * 60 + minutes;
+};
+
+// Convierte cadena de hora '07:00 AM' a minutos desde la medianoche para ordenar
+export function parseTimeToMinutes(timeStr?: string): number {
+  return getStartMinutes({ startTime: timeStr });
 }
 
 // Formatea la fecha y día legible en español
@@ -179,6 +182,36 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
     return { total, presencial, virtual, approved, pct };
   }, [sessions]);
 
+  // Agrupar sesiones por día para asegurar separación nítida de días y orden cronológico AM -> PM en cada jornada
+  const dayGroups = useMemo(() => {
+    const groupsMap = new Map<string, {
+      dateKey: string;
+      dayName: string;
+      dateFormatted: string;
+      daySessions: TrainingSession[];
+      timestamp: number;
+    }>();
+
+    sessions.forEach(session => {
+      const { dateStr, timestamp } = getSessionDateForSort(session);
+      const { dayName, dateFormatted } = formatSessionDateDisplay(session);
+      const key = dateStr !== '9999-99-99' ? dateStr : (session.date || 'sin-fecha');
+
+      if (!groupsMap.has(key)) {
+        groupsMap.set(key, {
+          dateKey: key,
+          dayName,
+          dateFormatted,
+          daySessions: [],
+          timestamp
+        });
+      }
+      groupsMap.get(key)!.daySessions.push(session);
+    });
+
+    return Array.from(groupsMap.values()).sort((a, b) => a.timestamp - b.timestamp);
+  }, [sessions]);
+
   // Ordenamiento cronológico estricto: Fechas más cercanas / del día actual arriba, lejanas abajo
   const sortedSessions = useMemo(() => {
     return [...sessions].sort((a, b) => {
@@ -188,11 +221,10 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
       if (dateA.timestamp !== dateB.timestamp) {
         return dateA.timestamp - dateB.timestamp;
       }
-      // 2. Horario dentro del mismo día (más temprano primero)
-      const timeA = parseTimeToMinutes(a.startTime);
-      const timeB = parseTimeToMinutes(b.startTime);
-      if (timeA !== timeB) {
-        return timeA - timeB;
+      // 2. Horario dentro del mismo día (más temprano primero de AM a PM)
+      const timeDiff = getStartMinutes(a) - getStartMinutes(b);
+      if (timeDiff !== 0) {
+        return timeDiff;
       }
       // 3. Desempate por número de ítem
       return (a.itemNumber || 0) - (b.itemNumber || 0);
@@ -451,96 +483,127 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {sortedSessions.map((session, sIdx) => {
-                      const effectiveStatus = getExportSessionStatus(session);
-                      const isApproved = effectiveStatus === 'APROBADO';
-                      const { dateStr } = getSessionDateForSort(session);
-                      const prevDateStr = sIdx > 0 ? getSessionDateForSort(sortedSessions[sIdx - 1]).dateStr : null;
-                      const isNewDateHeader = dateStr !== prevDateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr) && dateStr !== '9999-99-99';
-                      const { dayName, dateFormatted } = formatSessionDateDisplay(session);
+                    {dayGroups.map((group, gIdx) => {
+                      const daySessions = group.daySessions;
+                      // Orden cronológico obligatorio de horarios (mañana a tarde: AM a PM)
+                      const sortedDaySessions = [...daySessions].sort((a, b) => getStartMinutes(a) - getStartMinutes(b));
+                      const showDayHeader = group.dateKey !== 'sin-fecha' && (dayGroups.length > 1 || group.dateKey !== '9999-99-99');
 
                       return (
-                        <React.Fragment key={session.id || `${dateStr}-${sIdx}`}>
-                          {isNewDateHeader && (
+                        <React.Fragment key={group.dateKey || gIdx}>
+                          {showDayHeader && (
                             <tr className="bg-slate-800 text-amber-300 font-bold text-[9px] print:text-[8px] avoid-break" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
                               <td colSpan={9} className="py-0.5 px-2 uppercase tracking-wider">
-                                📅 {dayName} • {dateFormatted}
+                                📅 {group.dayName} • {group.dateFormatted}
                               </td>
                             </tr>
                           )}
-                          <tr 
-                            className={`avoid-break ${sIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}`}
-                            style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}
-                          >
-                            <td className="py-1 px-1 border-r border-slate-200 text-center font-bold text-slate-600">
-                              {session.itemNumber || sIdx + 1}
-                            </td>
-                            <td className="py-1 px-1.5 border-r border-slate-200 whitespace-nowrap font-medium text-slate-800">
-                              <div className="font-bold text-slate-900 leading-tight">{dayName}</div>
-                              <div className="text-[8px] text-slate-500">{dateFormatted}</div>
-                            </td>
-                            <td className="py-1 px-1.5 border-r border-slate-200 font-semibold text-slate-800 whitespace-nowrap">
-                              <div className="leading-tight">{session.startTime || 'Por definir'} - {session.endTime || 'Por definir'}</div>
-                              <div className="text-[8px] text-slate-500 font-normal">
-                                {session.academicShift || (session.durationHours ? `${session.durationHours} hrs` : '')}
-                              </div>
-                            </td>
-                            <td className="py-1 px-1.5 border-r border-slate-200 font-semibold text-slate-800">
-                              <span className={`inline-block px-1 py-0.2 rounded text-[8px] font-bold ${
-                                session.municipality === 'Uribia'
-                                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                  : session.municipality === 'Riohacha'
-                                  ? 'bg-sky-100 text-sky-900 border border-sky-300'
-                                  : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                              }`}>
-                                {session.municipality}
-                              </span>
-                            </td>
-                            <td className="py-1 px-1.5 border-r border-slate-200">
-                              <div className="font-bold text-slate-900 leading-tight">{session.institution}</div>
-                              {session.campus && (
-                                <div className="text-[8px] text-slate-600">
-                                  Sede: {session.campus}
-                                </div>
-                              )}
-                            </td>
-                            <td className="py-1 px-1.5 border-r border-slate-200">
-                              <div className="font-semibold text-slate-900 leading-tight">
-                                {session.trainingType || session.topic || 'Formación Vocacional'}
-                              </div>
-                              <div className="text-[8px] text-slate-500">
-                                Audiencia: <strong className="text-slate-700">{session.targetAudience}</strong>
-                              </div>
-                            </td>
-                            <td className="py-1 px-1 border-r border-slate-200 text-center whitespace-nowrap">
-                              <span className={`inline-block px-1 py-0.2 rounded text-[8px] font-bold ${
-                                session.modality === 'Presencial'
-                                  ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
-                                  : 'bg-sky-100 text-sky-900 border border-sky-300'
-                              }`}>
-                                {session.modality === 'Presencial' ? '🏛️ Presencial' : '💻 Virtual'}
-                              </span>
-                            </td>
-                            <td className="py-1 px-1 border-r border-slate-200 text-center whitespace-nowrap">
-                              <span className={`inline-block px-1 py-0.2 rounded text-[8px] font-extrabold ${
-                                isApproved
-                                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-400'
-                                  : 'bg-amber-50 text-amber-800 border border-amber-400'
-                              }`}>
-                                {effectiveStatus}
-                              </span>
-                            </td>
-                            <td className="py-1 px-1.5 text-slate-700">
-                              <div className="text-[8px] leading-tight">
-                                {session.observations || 'Formación regular concertada.'}
-                              </div>
-                              {session.responsible && (
-                                <div className="text-[7.5px] text-slate-500">
-                                  Resp: <strong>{session.responsible}</strong>
-                                </div>
-                              )}
-                            </td>
-                          </tr>
+                          {sortedDaySessions.map((session, sIdx) => {
+                            const effectiveStatus = getExportSessionStatus(session);
+                            const isApproved = effectiveStatus === 'APROBADO';
+                            const { dayName, dateFormatted } = formatSessionDateDisplay(session);
+
+                            // Detección de Grado / Población
+                            const detectedGrade = 
+                              session.grade || 
+                              (session as any).gradeOrCycle ||
+                              session.observations?.match(/Grado\s*([0-9]{1,2}(?:-[0-9]{1,2})?)/i)?.[0] || 
+                              session.topic?.match(/Grado\s*([0-9]{1,2}(?:-[0-9]{1,2})?)/i)?.[0] ||
+                              (session as any).name?.match(/Grado\s*([0-9]{1,2}(?:-[0-9]{1,2})?)/i)?.[0];
+
+                            const isDocente = 
+                              (session as any).audience?.toLowerCase().includes('docente') || 
+                              (session as any).type?.toLowerCase().includes('docente') ||
+                              session.targetAudience?.toLowerCase().includes('docente') ||
+                              (session.targetPopulation && String(session.targetPopulation).toLowerCase().includes('docente')) ||
+                              session.trainingType?.toLowerCase().includes('docente');
+
+                            return (
+                              <tr 
+                                key={session.id || `${group.dateKey}-${sIdx}`}
+                                className={`avoid-break ${sIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50/70'}`}
+                                style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}
+                              >
+                                <td className="py-1 px-1 border-r border-slate-200 text-center font-bold text-slate-600">
+                                  {session.itemNumber || sIdx + 1}
+                                </td>
+                                <td className="py-1 px-1.5 border-r border-slate-200 whitespace-nowrap font-medium text-slate-800">
+                                  <div className="font-bold text-slate-900 leading-tight">{dayName}</div>
+                                  <div className="text-[8px] text-slate-500">{dateFormatted}</div>
+                                </td>
+                                <td className="py-1 px-1.5 border-r border-slate-200 font-semibold text-slate-800 whitespace-nowrap">
+                                  <div className="leading-tight">{session.startTime || 'Por definir'} - {session.endTime || 'Por definir'}</div>
+                                  <div className="text-[8px] text-slate-500 font-normal">
+                                    {session.academicShift || (session.durationHours ? `${session.durationHours} hrs` : '')}
+                                  </div>
+                                </td>
+                                <td className="py-1 px-1.5 border-r border-slate-200 font-semibold text-slate-800">
+                                  <span className={`inline-block px-1 py-0.2 rounded text-[8px] font-bold ${
+                                    session.municipality === 'Uribia'
+                                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                      : session.municipality === 'Riohacha'
+                                      ? 'bg-sky-100 text-sky-900 border border-sky-300'
+                                      : 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                                  }`}>
+                                    {session.municipality}
+                                  </span>
+                                </td>
+                                <td className="py-1 px-1.5 border-r border-slate-200">
+                                  <div className="font-bold text-slate-900 leading-tight">{session.institution}</div>
+                                  {session.campus && (
+                                    <div className="text-[8px] text-slate-600">
+                                      Sede: {session.campus}
+                                    </div>
+                                  )}
+                                  {isDocente ? (
+                                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200 text-slate-800 border border-slate-300">
+                                      Población: Formación Docente
+                                    </span>
+                                  ) : (
+                                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-900 border border-blue-200 font-semibold">
+                                      {detectedGrade ? `Grado / Grupo: ${detectedGrade.replace(/grado\s*/i, '')}` : 'Audiencia: Estudiantes'}
+                                    </span>
+                                  )}
+                                </td>
+                                <td className="py-1 px-1.5 border-r border-slate-200">
+                                  <div className="font-semibold text-slate-900 leading-tight">
+                                    {session.trainingType || session.topic || 'Formación Vocacional'}
+                                  </div>
+                                  <div className="text-[8px] text-slate-500">
+                                    Audiencia: <strong className="text-slate-700">{session.targetAudience}</strong>
+                                  </div>
+                                </td>
+                                <td className="py-1 px-1 border-r border-slate-200 text-center whitespace-nowrap">
+                                  <span className={`inline-block px-1 py-0.2 rounded text-[8px] font-bold ${
+                                    session.modality === 'Presencial'
+                                      ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                                      : 'bg-sky-100 text-sky-900 border border-sky-300'
+                                  }`}>
+                                    {session.modality === 'Presencial' ? '🏛️ Presencial' : '💻 Virtual'}
+                                  </span>
+                                </td>
+                                <td className="py-1 px-1 border-r border-slate-200 text-center whitespace-nowrap">
+                                  <span className={`inline-block px-1 py-0.2 rounded text-[8px] font-extrabold ${
+                                    isApproved
+                                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-400'
+                                      : 'bg-amber-50 text-amber-800 border border-amber-400'
+                                  }`}>
+                                    {effectiveStatus}
+                                  </span>
+                                </td>
+                                <td className="py-1 px-1.5 text-slate-700">
+                                  <div className="text-[8px] leading-tight">
+                                    {session.observations || 'Formación regular concertada.'}
+                                  </div>
+                                  {session.responsible && (
+                                    <div className="text-[7.5px] text-slate-500">
+                                      Resp: <strong>{session.responsible}</strong>
+                                    </div>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </React.Fragment>
                       );
                     })}

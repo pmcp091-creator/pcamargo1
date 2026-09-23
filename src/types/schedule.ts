@@ -61,6 +61,10 @@ export interface TrainingSession {
   frequency: Frequency;
   responsible: string; // e.g. 'The Biz Nation'
   gradeOrCycle?: string; // e.g. 'Grado 9°', 'Grados 10° y 11°', 'Ciclo 4', 'Ciclo 6'
+  grade?: string;
+  name?: string;
+  audience?: string;
+  type?: string;
   observations: string;
   infrastructureNotes?: string;
   lastUpdated?: string;
