@@ -25,8 +25,8 @@ import {
 } from './utils/storage';
 import { analyzeConflictsAndRules } from './utils/conflictChecker';
 import { validarLimiteUribia, reportarDiagnosticoUribia } from './utils/validarCronograma';
-import { isObsoleteUribiaSession, purgeObsoleteUribiaSessions } from './utils/scheduleGenerator';
-import { sortSessions, SessionSortField, SortOrder } from './utils/sorting';
+import { validarReglaUribia, asegurarReglaUribia } from './utils/uribiaValidator';
+import { sortSessions, SessionSortField, SortOrder, ordenarSesionesDelDia } from './utils/sorting';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { loadHtml2Pdf } from './utils/pdfExport';
 import { initialValidatedSessions, expandToIndividualSessions } from './data/scheduleRulesData';
@@ -102,13 +102,12 @@ export const deduplicateSessions = (rawSessions: TrainingSession[]): TrainingSes
 export default function App() {
   const isOnline = useOnlineStatus();
 
-  const STORAGE_KEY = 'cronograma_oficial_estudiantes_332_sin_duplicados_sep_dic_2026';
+  const STORAGE_KEY = 'cronograma_oficial_estudiantes_v10_uribia_clean';
 
   // App State with Persistence: sesiones individuales reales de calendario (Sep - Dic 2026)
   const [sessions, setSessions] = useState<TrainingSession[]>(() => {
     try {
-      // Limpiar versiones anteriores que contenían datos antiguos, sesiones docentes o duplicados de rotación
-      localStorage.removeItem('cronograma_oficial_estudiantes_uribia_validado_sep_dic_2026');
+      // Limpiar versiones anteriores que contenían datos antiguos, conflictos de Uribia o sesiones docentes
       localStorage.removeItem('cronograma_oficial_estudiantes_sep_dic_2026');
       localStorage.removeItem('cronograma_oficial_470_sep_dic_2026');
       localStorage.removeItem('cronograma_completo_sep_dic_2026');
@@ -125,15 +124,14 @@ export default function App() {
         const parsed = JSON.parse(saved);
         if (
           Array.isArray(parsed) && 
-          parsed.length === 332 &&
-          validarLimiteUribia(parsed).valido &&
+          parsed.length > 0 &&
+          validarReglaUribia(parsed).valido &&
           !parsed.some(s => 
             s.modality === 'Microlearning' || 
             (s.institution || '').toLowerCase().includes('pajaro') ||
             (s.targetAudience || '').toLowerCase().includes('docente') ||
             (s.targetPopulation || '').toLowerCase().includes('docente') ||
-            (s.trainingType || '').toLowerCase().includes('docente') ||
-            isObsoleteUribiaSession(s)
+            (s.trainingType || '').toLowerCase().includes('docente')
           )
         ) {
           const expanded = expandToIndividualSessions(parsed);
@@ -147,17 +145,17 @@ export default function App() {
         ? initialValidatedSessions 
         : [];
       const expanded = expandToIndividualSessions(source);
-      const cleanData = deduplicateSessions(expanded)
-        .filter(s => !isObsoleteUribiaSession(s))
-        .map((s, idx) => ({
-          ...s,
-          itemNumber: idx + 1
-        }));
+      const cleanData = deduplicateSessions(expanded).map((s, idx) => ({
+        ...s,
+        itemNumber: idx + 1
+      }));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));
       // Validación determinística territorial de Uribia
+      asegurarReglaUribia(cleanData);
       reportarDiagnosticoUribia(validarLimiteUribia(cleanData));
       return cleanData;
     } catch (e) {
+      console.error('Error inicializando sesiones maestras:', e);
       return [];
     }
   });
@@ -339,43 +337,40 @@ export default function App() {
     const unsubscribeSessions = subscribeToSessions((firestoreSessions) => {
       clearTimeout(offlineGraceTimer);
       if (firestoreSessions.length > 0) {
-        // Filtrar localmente registros no deseados (El Pájaro, Microlearning, Docentes y fechas viejas de rotación)
+        // Filtrar localmente registros no deseados (El Pájaro, Microlearning y Formación Docente eliminada)
         const cleanSessions = firestoreSessions.filter(
           s => s.modality !== 'Microlearning' &&
                !(s.institution || '').toLowerCase().includes('pajaro') &&
                !(s.institution || '').toLowerCase().includes('pájaro') &&
                !(s.targetAudience || '').toLowerCase().includes('docente') &&
                !(s.targetPopulation || '').toLowerCase().includes('docente') &&
-               !(s.trainingType || '').toLowerCase().includes('docente') &&
-               !isObsoleteUribiaSession(s)
+               !(s.trainingType || '').toLowerCase().includes('docente')
         );
 
         const clean = deduplicateSessions(cleanSessions);
-        // Garantizar exactamente 332 sesiones oficiales limpias en estado
-        if (clean.length === 332) {
+        // Validar territorialidad de Uribia
+        const uribiaCheck = validarReglaUribia(clean);
+
+        // Si Firestore tiene sesiones docentes obsoletas, o IDs que no empiezan por SES-, o viola la regla de Uribia, resincronizar
+        const needsReset = !uribiaCheck.valido || firestoreSessions.some(
+          s => (s.targetAudience || '').toLowerCase().includes('docente') ||
+               (s.targetPopulation || '').toLowerCase().includes('docente') ||
+               (s.trainingType || '').toLowerCase().includes('docente') ||
+               !s.id.startsWith('SES-')
+        );
+
+        if (needsReset) {
+          setSessions(initialClean);
+          if (!hasAttemptedSeed) {
+            hasAttemptedSeed = true;
+            resetFirestoreSessions(initialClean).catch(err => console.warn('Resincronizando Firestore con nuevo cronograma válido:', err));
+          }
+        } else if (clean.length > 0) {
           setSessions(clean);
         } else {
           setSessions(initialClean);
         }
         setFirebaseSyncStatus('synced');
-
-        // Si Firestore tiene sesiones docentes obsoletas, fechas viejas de Uribia o recuento distinto de 332, resincronizar
-        const uribiaCheck = validarLimiteUribia(clean);
-        const hasLegacyOrDocentesOrConflicts = 
-          !uribiaCheck.valido ||
-          clean.length !== 332 ||
-          firestoreSessions.length !== 332 ||
-          firestoreSessions.some(
-            s => (s.targetAudience || '').toLowerCase().includes('docente') ||
-                 (s.targetPopulation || '').toLowerCase().includes('docente') ||
-                 (s.trainingType || '').toLowerCase().includes('docente') ||
-                 !s.id.startsWith('SES-') ||
-                 isObsoleteUribiaSession(s)
-          );
-        if (hasLegacyOrDocentesOrConflicts && !hasAttemptedSeed) {
-          hasAttemptedSeed = true;
-          resetFirestoreSessions(initialClean).catch(err => console.warn('Resincronizando Firestore con matriz territorial Uribia validada (332 sesiones):', err));
-        }
       } else if (!hasAttemptedSeed) {
         hasAttemptedSeed = true;
         // Si Firestore está vacío, sembramos la matriz oficial inicial completa Sep - Dic 2026 (solo estudiantes)

@@ -1,11 +1,10 @@
 import { TrainingSession, InstitutionProfile, BrandingSettings, BackupSnapshot } from '../types/schedule';
 import { INITIAL_SESSIONS, INITIAL_INSTITUTIONS, DEFAULT_BRANDING } from '../data/initialData';
 import { USER_LOADED_SESSIONS } from '../data/userLoadedSessions';
-import { isObsoleteUribiaSession } from './scheduleGenerator';
 import { exportToExcelFile } from './excelExport';
 
 const STORAGE_KEYS = {
-  SESSIONS: 'biz_cronograma_sessions_v5_estudiantes',
+  SESSIONS: 'biz_cronograma_sessions_v10_uribia_clean',
   INSTITUTIONS: 'biz_cronograma_institutions_v4',
   BRANDING: 'biz_cronograma_branding_v3',
   SNAPSHOTS: 'biz_cronograma_snapshots_v1',
@@ -32,22 +31,21 @@ export function loadSessions(): TrainingSession[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        const cleanList = parsed
+        const noDocentes = parsed
           .filter((s: any) => 
             !(s.targetAudience || '').toLowerCase().includes('docente') &&
             !(s.targetPopulation || '').toLowerCase().includes('docente') &&
-            !(s.trainingType || '').toLowerCase().includes('docente') &&
-            !isObsoleteUribiaSession(s)
+            !(s.trainingType || '').toLowerCase().includes('docente')
           )
           .map(sanitizeSession);
-        if (cleanList.length === 332) return cleanList;
+        if (noDocentes.length > 0) return noDocentes;
       }
     }
   } catch (err) {
     console.error('Error loading sessions from storage:', err);
   }
-  // Matriz maestra oficial actualizada: solo estudiantes (0 docentes, 332 sesiones oficiales)
-  return USER_LOADED_SESSIONS.filter(s => !isObsoleteUribiaSession(s)).map(sanitizeSession);
+  // Matriz maestra oficial actualizada: solo estudiantes (0 docentes)
+  return USER_LOADED_SESSIONS.map(sanitizeSession);
 }
 
 export function saveSessions(sessions: TrainingSession[]): void {

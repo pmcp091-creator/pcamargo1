@@ -8,6 +8,7 @@ import {
   FileSpreadsheet
 } from 'lucide-react';
 import { generateDirectPDF } from '../utils/pdfExport';
+import { ordenarSesionesDelDia, getStartMinutes } from '../utils/sorting';
 
 export const getExportSessionStatus = (session: TrainingSession): string => {
   return session.status || 'APROBADO';
@@ -485,8 +486,8 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                   <tbody className="divide-y divide-slate-200">
                     {dayGroups.map((group, gIdx) => {
                       const daySessions = group.daySessions;
-                      // Orden cronológico obligatorio de horarios (mañana a tarde: AM a PM)
-                      const sortedDaySessions = [...daySessions].sort((a, b) => getStartMinutes(a) - getStartMinutes(b));
+                      // Orden visual e impreso único — AM a PM (Paso 2)
+                      const sortedDaySessions = ordenarSesionesDelDia(daySessions);
                       const showDayHeader = group.dateKey !== 'sin-fecha' && (dayGroups.length > 1 || group.dateKey !== '9999-99-99');
 
                       return (

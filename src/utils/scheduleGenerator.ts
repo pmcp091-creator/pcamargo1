@@ -7,65 +7,25 @@ import {
   ScheduleStatus 
 } from '../types/schedule';
 import { 
-  validarLimiteUribia, 
-  reportarDiagnosticoUribia,
-  Sesion,
-  Conflicto,
-  ResultadoValidacion,
-  normalizarSesion
-} from './validarCronograma';
+  validarReglaUribia, 
+  asegurarReglaUribia, 
+  Session as ValidatorSession,
+  UribiaConflict
+} from './uribiaValidator';
+import { ordenarSesionesDelDia, getStartMinutes } from './sorting';
 
 export {
-  validarLimiteUribia,
-  reportarDiagnosticoUribia,
-  normalizarSesion
+  validarReglaUribia,
+  asegurarReglaUribia
 };
 export type {
-  Sesion,
-  Conflicto,
-  ResultadoValidacion
+  ValidatorSession,
+  UribiaConflict
 };
 
-/**
- * Detecta y purga sesiones con fechas viejas de la rotación previa de Uribia:
- * 1. Guarerapu: eliminar todas las fechas de martes desde el 29-sep en adelante (29-sep, 13-oct, 27-oct, 10-nov, 24-nov).
- * 2. Puay (presencial): eliminar todas las fechas de martes desde el 13-oct en adelante (13-oct, 27-oct, 10-nov, 24-nov).
- * 3. Yotojoroin (presencial): eliminar todas las fechas de jueves desde el 1-oct en adelante (1-oct, 15-oct, 29-oct, 12-nov, 26-nov).
- */
-export const isObsoleteUribiaSession = (s: TrainingSession | any): boolean => {
-  if (!s) return false;
-  const inst = (s.institution || s.campus || '').toLowerCase();
-  const idStr = (s.id || '').toLowerCase();
-  const date = (s.specificDate || s.date || '').trim();
-  const mod = (s.modality || '').toLowerCase();
-
-  // 1. Guarerapu: eliminar fechas viejas de martes desde el 29-sep en adelante
-  if (inst.includes('guarerapu') || idStr.includes('guarerapu')) {
-    const obsoleteGuarerapuDates = ['2026-09-29', '2026-10-13', '2026-10-27', '2026-11-10', '2026-11-24'];
-    if (obsoleteGuarerapuDates.includes(date)) return true;
-    if (obsoleteGuarerapuDates.some(d => idStr.includes(d) || idStr.includes(d.replace(/-/g, '')))) return true;
-  }
-
-  // 2. Puay (presencial): eliminar fechas viejas de martes desde el 13-oct en adelante
-  if ((inst.includes('puay') || idStr.includes('puay')) && (mod === 'presencial' || (!idStr.includes('-ct') && !idStr.includes('-hb')))) {
-    const obsoletePuayDates = ['2026-10-13', '2026-10-27', '2026-11-10', '2026-11-24'];
-    if (obsoletePuayDates.includes(date)) return true;
-    if (obsoletePuayDates.some(d => idStr.includes(d) || idStr.includes(d.replace(/-/g, '')))) return true;
-  }
-
-  // 3. Yotojoroin (presencial): eliminar fechas viejas de jueves desde el 1-oct en adelante
-  if (inst.includes('yotojoroin') || idStr.includes('yotojoroin')) {
-    const obsoleteYotojoroinDates = ['2026-10-01', '2026-10-15', '2026-10-29', '2026-11-12', '2026-11-26'];
-    if (obsoleteYotojoroinDates.includes(date)) return true;
-    if (obsoleteYotojoroinDates.some(d => idStr.includes(d) || idStr.includes(d.replace(/-/g, '')))) return true;
-  }
-
-  return false;
-};
-
-export const purgeObsoleteUribiaSessions = (sessions: TrainingSession[]): TrainingSession[] => {
-  return sessions.filter(s => !isObsoleteUribiaSession(s));
-};
+// Versión y Timestamp oficial de generación de datos
+export const MASTER_SCHEDULE_VERSION = 'v10-2026-sep-dic-uribia-clean';
+export const MASTER_SCHEDULE_TIMESTAMP = '2026-09-25T14:15:00';
 
 // Helper to determine day of week in Spanish
 export const getDayOfWeekSpanish = (dateStr: string): string => {
@@ -113,9 +73,20 @@ export const formatScheduledMonths = (dates: string[]) => {
   return months;
 };
 
-// Clean hour string for unique ID: e.g. "08:00 AM" -> "0800AM"
+// Clean hour string for unique ID: e.g. "08:00 AM" -> "0800"
+export const formatHourHHmm = (hourStr: string): string => {
+  const match = hourStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!match) return hourStr.replace(/[^0-9]/g, '');
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2];
+  const meridian = (match[3] || '').toUpperCase();
+  if (meridian === 'PM' && hours < 12) hours += 12;
+  if (meridian === 'AM' && hours === 12) hours = 0;
+  return `${String(hours).padStart(2, '0')}${minutes}`;
+};
+
 export const cleanHourForId = (hourStr: string): string => {
-  return hourStr.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+  return formatHourHHmm(hourStr);
 };
 
 export interface MasterRuleGroup {
@@ -139,9 +110,8 @@ export interface MasterRuleGroup {
 }
 
 // ==============================================================================
-// FECHAS BASE DE CALENDARIO (SEPTIEMBRE - DICIEMBRE 2026)
+// FECHAS BASE DE CALENDARIO CONTINUO (SEPTIEMBRE - DICIEMBRE 2026)
 // ==============================================================================
-// Continuas semanales para Mega Colegio y Chon-Kay
 export const MONDAYS_CONTINUOUS = [
   '2026-09-21', '2026-09-28', '2026-10-05', '2026-10-12', '2026-10-19',
   '2026-10-26', '2026-11-02', '2026-11-09', '2026-11-16', '2026-11-23', '2026-11-30'
@@ -165,11 +135,12 @@ export const FRIDAYS_CONTINUOUS = [
 
 // ==============================================================================
 // DEFINICIÓN DE GRUPOS DE REGLAS MAESTRAS (SOLO FORMACIÓN DE ESTUDIANTES)
-// FORMACIÓN DOCENTE: 0 SESIONES (ELIMINADA TOTALMENTE)
+// FORMACIÓN DOCENTE: 0 SESIONES (AUDIENCIA === 'ESTUDIANTES')
 // ==============================================================================
 export const MASTER_RULES: MasterRuleGroup[] = [
   // ----------------------------------------------------------------------------
-  // [URIBIA]
+  // [URIBIA - 7 INSTITUCIONES / SEDES FÍSICAS]
+  // Cumplimiento estricto: Máximo 2 instituciones físicas distintas por día
   // ----------------------------------------------------------------------------
 
   // 1. Petsuapa
@@ -210,7 +181,7 @@ export const MASTER_RULES: MasterRuleGroup[] = [
     dates: ['2026-09-29', '2026-10-13', '2026-10-27', '2026-11-10', '2026-11-24', '2026-12-08'],
     status: 'APROBADO'
   },
-  // Virtual CT: Miércoles (inicia 30-Sep), 07:45 AM - 09:45 AM
+  // Virtual CT: Jueves (Paso 4: virtual HB martes / virtual CT y presencial jueves)
   {
     instId: 'petsuapa',
     subKey: 'ct',
@@ -225,13 +196,13 @@ export const MASTER_RULES: MasterRuleGroup[] = [
     endTime: '09:45 AM',
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
-    observations: 'Bloque virtual quincenal en Competencias Técnicas (inicia 30-Sep).',
-    dates: ['2026-09-30', '2026-10-14', '2026-10-28', '2026-11-11', '2026-11-25', '2026-12-09'],
+    observations: 'Bloque virtual quincenal en Competencias Técnicas (jueves, inicia 24-Sep).',
+    dates: ['2026-09-24', '2026-10-08', '2026-10-22', '2026-11-05', '2026-11-19', '2026-12-03'],
     status: 'APROBADO'
   },
 
-  // 2. Guarerapu #3
-  // Presencial: Jueves impares (inicia 15-Sep; sesiones 2-6: 01-Oct, 15-Oct, 29-Oct, 12-Nov, 26-Nov), 08:00 AM - 11:00 AM
+  // 2. Guarerapu #3 (Paso 4 calendario resuelto: Sesión 1 histórica 15-sep; Sesiones 2-6: Jue 1-oct, 15-oct, 29-oct, 12-nov, 26-nov)
+  // Presencial 08:00 AM - 11:00 AM (Solo 6 presenciales, 0 virtuales)
   {
     instId: 'guarerapu',
     municipality: 'Uribia',
@@ -245,13 +216,13 @@ export const MASTER_RULES: MasterRuleGroup[] = [
     endTime: '11:00 AM',
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
-    observations: 'Formación presencial quincenal (inicia 15-Sep; sesiones 2-6 en Jueves impares 8:00am - 11:00am simultáneo con Apaimana). Solo 6 sesiones presenciales en total.',
+    observations: 'Formación presencial quincenal (inicia 15-Sep). Solo 6 sesiones presenciales en total.',
     dates: ['2026-09-15', '2026-10-01', '2026-10-15', '2026-10-29', '2026-11-12', '2026-11-26'],
     status: 'APROBADO'
   },
 
-  // 3. Sede Puay
-  // Presencial: Martes 15-Sep (sesión 1), Lunes 28-Sep (sesión 2), Miércoles quincenales (sesiones 3-6: 07-Oct, 21-Oct, 04-Nov, 18-Nov), 08:00 AM - 11:00 AM
+  // 3. Sede Puay (Paso 4: Sesión 1 histórica 15-sep; Sesiones 2-6: Mié 7-oct, 21-oct, 4-nov, 18-nov, 2-dic — mismo día que su propio virtual)
+  // Presencial 08:00 AM - 11:00 AM
   {
     instId: 'puay',
     municipality: 'Uribia',
@@ -265,8 +236,8 @@ export const MASTER_RULES: MasterRuleGroup[] = [
     endTime: '11:00 AM',
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
-    observations: 'Formación presencial en sede Puay (inicia 15-Sep, sesión 2 Lunes 28-Sep; sesiones 3-6 en Miércoles simultáneo con bloque virtual).',
-    dates: ['2026-09-15', '2026-09-28', '2026-10-07', '2026-10-21', '2026-11-04', '2026-11-18'],
+    observations: 'Formación presencial en sede Puay (Sesión 1: 15-Sep; Sesiones 2-6 los miércoles compartiendo día con su virtual).',
+    dates: ['2026-09-15', '2026-10-07', '2026-10-21', '2026-11-04', '2026-11-18', '2026-12-02'],
     status: 'APROBADO'
   },
   // Virtual CT: Miércoles (inicia 23-Sep), 07:00 AM - 09:00 AM
@@ -308,7 +279,7 @@ export const MASTER_RULES: MasterRuleGroup[] = [
     status: 'APROBADO'
   },
 
-  // 4. Walakaly #2
+  // 4. Walakaly #2 (Paso 4: presencial miércoles / virtual martes)
   // Presencial: Miércoles (inicia 23-Sep), 08:30 AM - 11:30 AM (quincenal, 6 presenciales)
   {
     instId: 'walakaly',
@@ -366,8 +337,8 @@ export const MASTER_RULES: MasterRuleGroup[] = [
     status: 'APROBADO'
   },
 
-  // 5. Apaimana (solo miércoles y jueves)
-  // Presencial: Jueves (inicia 17-Sep), 08:30 AM - 12:00 PM (6 presenciales)
+  // 5. Apaimana (Paso 4: presencial, sin cambio — ya estaba correcta: Jue 17-sep, 1-oct, 15-oct, 29-oct, 12-nov, 26-nov)
+  // Presencial: Jueves 08:30 AM - 12:00 PM (6 presenciales)
   {
     instId: 'apaimana',
     municipality: 'Uribia',
@@ -405,8 +376,8 @@ export const MASTER_RULES: MasterRuleGroup[] = [
     status: 'APROBADO'
   },
 
-  // 6. Jaipa
-  // Presencial: Jueves 17-Sep (excepción inicial) y luego Miércoles quincenal (solo 6 sesiones presenciales, 0 virtuales)
+  // 6. Jaipa (Paso 4: solo miércoles presencial, alternando semana con el bloque Walakaly+Puay-virtual; 6 presenciales, 0 virtuales)
+  // Presencial 08:30 AM - 11:30 AM
   {
     instId: 'jaipa',
     municipality: 'Uribia',
@@ -420,13 +391,13 @@ export const MASTER_RULES: MasterRuleGroup[] = [
     endTime: '11:30 AM',
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
-    observations: 'Inicia Jueves 17-Sep (excepción inicial); retoma Miércoles 30-Sep cada 15 días (solo 6 presenciales).',
-    dates: ['2026-09-17', '2026-09-30', '2026-10-14', '2026-10-28', '2026-11-11', '2026-11-25'],
+    observations: 'Formación presencial quincenal los miércoles, alternando semana con el bloque Walakaly y Puay (solo 6 presenciales).',
+    dates: ['2026-09-16', '2026-09-30', '2026-10-14', '2026-10-28', '2026-11-11', '2026-11-25'],
     status: 'APROBADO'
   },
 
-  // 7. Yotojoroin
-  // Presencial: Jueves 17-Sep (sesión 1), Lunes quincenales (sesiones 2-6: 28-Sep, 12-Oct, 26-Oct, 09-Nov, 23-Nov), 08:30 AM - 11:30 AM (HB). Solo 6 presenciales, 0 virtuales.
+  // 7. Yotojoroin (Paso 4: Sesión 1 histórica 17-sep; Sesiones 2-6: Lun 28-sep, 12-oct, 26-oct, 9-nov, 23-nov; solo 6 presenciales, 0 virtuales)
+  // Presencial 08:30 AM - 11:30 AM
   {
     instId: 'yotojoroin',
     municipality: 'Uribia',
@@ -440,13 +411,13 @@ export const MASTER_RULES: MasterRuleGroup[] = [
     endTime: '11:30 AM',
     frequency: 'Quincenal',
     gradeOrCycle: 'Grados 9°, 10° y 11°',
-    observations: 'Formación presencial (inicia 17-Sep; sesiones 2-6 en Lunes quincenales 8:30am - 11:30am). Solo 6 sesiones presenciales en total.',
+    observations: 'Formación presencial (Sesión 1 histórica 17-Sep; Sesiones 2-6 los lunes quincenales).',
     dates: ['2026-09-17', '2026-09-28', '2026-10-12', '2026-10-26', '2026-11-09', '2026-11-23'],
     status: 'APROBADO'
   },
 
   // ----------------------------------------------------------------------------
-  // [RIOHACHA]
+  // [RIOHACHA - 4 INSTITUCIONES]
   // ----------------------------------------------------------------------------
 
   // 8. Denzil Escolar - Sede Dividivi Sabatino (Solo 6 presenciales en total, 0 virtuales)
@@ -924,18 +895,17 @@ export const MASTER_RULES: MasterRuleGroup[] = [
 ];
 
 // ==============================================================================
-// GENERADOR MAESTRO DE SESIONES INDIVIDUALES
+// GENERADOR MAESTRO DE SESIONES INDIVIDUALES (FUENTE ÚNICA DE VERDAD)
 // Asigna IDs unívocos basados estrictamente en institución y fecha:
-// FORMATO EXIGIDO: SES-${instId}-${date}-${startHour}
+// FORMATO EXIGIDO: SES-${institucionId}-${fecha}-${horaInicioHHmm}
 // ==============================================================================
 export const generateMasterSchedule = (): TrainingSession[] => {
   const sessions: TrainingSession[] = [];
   const idOccurrenceMap = new Map<string, number>();
-  let globalItemNumber = 1;
 
   MASTER_RULES.forEach((rule) => {
     const duration = calculateDuration(rule.startTime, rule.endTime);
-    const cleanHour = cleanHourForId(rule.startTime);
+    const hourHHmm = formatHourHHmm(rule.startTime);
 
     rule.dates.forEach((dateStr, idx) => {
       const dayOfWeek = getDayOfWeekSpanish(dateStr);
@@ -944,20 +914,20 @@ export const generateMasterSchedule = (): TrainingSession[] => {
         ? rule.sessionNumbers[idx] 
         : (idx + 1);
 
-      // Base ID unívoco exigido: SES-${instId}-${date}-${startHour}
-      let baseId = `SES-${rule.instId}-${dateStr}-${cleanHour}`;
+      // Base ID unívoco exigido: SES-${institucionId}-${fecha}-${horaInicioHHmm}
+      let baseId = `SES-${rule.instId}-${dateStr}-${hourHHmm}`;
       if (rule.subKey) {
         baseId += `-${rule.subKey}`;
       }
 
-      // Desempate garantizado si la misma institución tiene 2 bloques a la misma hora en la misma fecha
+      // Desempate garantizado en caso de colisión
       const occurrence = (idOccurrenceMap.get(baseId) || 0) + 1;
       idOccurrenceMap.set(baseId, occurrence);
       const uniqueId = occurrence > 1 ? `${baseId}-${occurrence}` : baseId;
 
       const session: TrainingSession = {
         id: uniqueId,
-        itemNumber: globalItemNumber++,
+        itemNumber: 0, // Se asignará ordenado
         municipality: rule.municipality,
         institution: rule.institution,
         campus: rule.campus,
@@ -982,25 +952,37 @@ export const generateMasterSchedule = (): TrainingSession[] => {
         observations: rule.observations 
           ? `${rule.observations} (Sesión ${sessionNum})` 
           : `Sesión ${sessionNum} de formación (${rule.modality}).`,
-        infrastructureNotes: `Parametrización validada (${rule.frequency}). Horario: ${rule.startTime} - ${rule.endTime}.`,
-        lastUpdated: '2026-09-24'
+        infrastructureNotes: `Parametrización oficial (${rule.frequency}). Horario: ${rule.startTime} - ${rule.endTime}.`,
+        lastUpdated: '2026-09-25'
       };
 
       sessions.push(session);
     });
   });
 
-  // Ejecutar validación determinística territorial de Uribia
-  const diagnosticoUribia = validarLimiteUribia(sessions);
-  reportarDiagnosticoUribia(diagnosticoUribia);
+  // PASO 3 & PASO 5: LLAMAR asegurarReglaUribia ANTES de dar por buena la generación
+  asegurarReglaUribia(sessions);
 
-  return sessions;
+  // Ordenar globalmente por fecha ascendente y dentro del día por AM -> PM
+  const sortedSessions = sessions.sort((a, b) => {
+    const dateA = a.specificDate || a.date || '';
+    const dateB = b.specificDate || b.date || '';
+    if (dateA !== dateB) return dateA.localeCompare(dateB);
+    return getStartMinutes(a) - getStartMinutes(b);
+  });
+
+  // Asignar itemNumber secuencial definitivo
+  sortedSessions.forEach((s, idx) => {
+    s.itemNumber = idx + 1;
+  });
+
+  return sortedSessions;
 };
 
-// Sesiones maestras pregeneradas
+// Sesiones maestras pregeneradas oficiales
 export const MASTER_STUDENT_SESSIONS: TrainingSession[] = generateMasterSchedule();
 
-// Métricas de validación del nuevo conjunto de datos
+// Métricas de validación del conjunto maestro oficial
 export const getScheduleKpis = (sessions: TrainingSession[] = MASTER_STUDENT_SESSIONS) => {
   const total = sessions.length;
   const presenciales = sessions.filter(s => s.modality === 'Presencial').length;

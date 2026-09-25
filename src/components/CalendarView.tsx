@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { TrainingSession, Municipality, Modality, InstitutionProfile } from '../types/schedule';
 import { deduplicateSessions } from '../App';
+import { ordenarSesionesDelDia } from '../utils/sorting';
 import { 
   Calendar as CalendarIcon, 
   ChevronLeft, 
@@ -690,6 +691,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               const uniqueDaySessions = daySessions.filter((session, index, self) =>
                 index === self.findIndex((s) => (s.id ? s.id === session.id : `${s.institution}-${s.date}-${s.startTime}-${s.topic}` === `${session.institution}-${session.date}-${session.startTime}-${session.topic}`))
               );
+              // Orden visual único AM a PM (Paso 2)
+              const sortedDaySessions = ordenarSesionesDelDia(uniqueDaySessions);
 
               const isSelectedDay = dateStr === selectedDate;
 
@@ -747,7 +750,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
                   {/* Event Badges List inside cell */}
                   <div className="space-y-1 overflow-y-auto max-h-[85px] pr-0.5 scrollbar-thin">
-                    {uniqueDaySessions.map(session => {
+                    {sortedDaySessions.map(session => {
                       // Badge color styling based on Municipality & Modality
                       let badgeClasses = 'border-sky-500/40 bg-sky-950/60 text-sky-200 hover:border-sky-400';
                       if (session.municipality.toUpperCase() === 'URIBIA') {
@@ -866,7 +869,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3">
             {weekDays.map(dayInfo => {
               const rawSessions = getSessionsForDate(dayInfo.dateStr, dayInfo.dayName, dayInfo.dayNum);
-              const daySessionsUnique = deduplicateSessions(rawSessions);
+              const daySessionsUnique = ordenarSesionesDelDia(deduplicateSessions(rawSessions));
 
               const uribiaPresencials = daySessionsUnique.filter(
                 s => (s.municipality || '').toUpperCase() === 'URIBIA' && s.modality === 'Presencial'

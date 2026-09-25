@@ -1,5 +1,8 @@
 import React, { useMemo } from 'react';
 import { TrainingSession, InstitutionProfile } from '../types/schedule';
+import { MASTER_SCHEDULE_VERSION, MASTER_SCHEDULE_TIMESTAMP } from '../utils/scheduleGenerator';
+import { validarReglaUribia } from '../utils/uribiaValidator';
+import { CheckCircle2, ShieldCheck, Calendar, Clock, Database } from 'lucide-react';
 
 interface DashboardViewProps {
   sessions: TrainingSession[];
@@ -15,7 +18,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   // Métricas Totales
   const totalSessions = sessions.length;
 
-  // Balance Presencial vs Virtual
+  // Balance Presencial vs Virtual (calculado dinámicamente)
   const presencialesCount = useMemo(
     () => sessions.filter(s => s.modality === 'Presencial').length,
     [sessions]
@@ -43,32 +46,42 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     [sessions]
   );
 
-  // Regla Uribia (Días con sobrecupo de más de 2 instituciones presenciales simultáneas)
-  // Según regla maestra: Máximo 2 instituciones físicas distintas por día (si una institución tiene 2 o más sesiones en el mismo día, cuenta como 1 sola institución)
-  const uribiaOvercapacityDays = useMemo(() => {
-    const countsByDate: Record<string, Set<string>> = {};
-    sessions
-      .filter(s => 
-        s.modality === 'Presencial' && 
-        (s.municipality === 'Uribia' || s.institution?.toLowerCase().includes('uribia') ||
-         ['petsuapa', 'guarerapu', 'puay', 'walakaly', 'apaimana', 'jaipa', 'yotojoroin'].some(name => s.institution?.toLowerCase().includes(name)))
-      )
-      .forEach(s => {
-        const datesToCheck = s.specificDates && s.specificDates.length > 0 
-          ? s.specificDates 
-          : [s.date || s.specificDate].filter((d): d is string => Boolean(d));
-        datesToCheck.forEach(dateKey => {
-          if (!countsByDate[dateKey]) countsByDate[dateKey] = new Set();
-          // Agrupar por institución matriz (si tiene múltiples sedes o sesiones el mismo día, cuenta como 1)
-          const baseInst = (s.institution || '').replace(/\s*-\s*Sede.*$/i, '').trim();
-          countsByDate[dateKey].add(baseInst);
-        });
-      });
-    return Object.values(countsByDate).filter(institutionsSet => institutionsSet.size > 2).length;
+  // Regla Uribia (Validación determinística según uribiaValidator: máx. 2 sedes/día)
+  const uribiaConflicts = useMemo(() => {
+    return validarReglaUribia(sessions).conflictos;
   }, [sessions]);
+  const uribiaOvercapacityDays = uribiaConflicts.length;
 
   return (
     <div className="space-y-6">
+      {/* Banner de Sincronización y Versión Oficial (Paso 6) */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 border border-slate-700/80 rounded-2xl p-4 sm:p-5 text-white shadow-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-emerald-400">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                  Fuente Única de Verdad Sincronizada
+                </span>
+                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                  ID Versión: {MASTER_SCHEDULE_VERSION}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Todas las pestañas (Dashboard, Matriz, Calendario y PDF) leen el mismo arreglo maestro regenerado de {totalSessions} sesiones.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 text-[11px] text-slate-400 self-end sm:self-center shrink-0">
+            <Clock className="w-3.5 h-3.5 text-amber-400" />
+            <span>Generación: {MASTER_SCHEDULE_TIMESTAMP.replace('T', ' ')}</span>
+          </div>
+        </div>
+      </div>
+
       {/* 1. KPIs Superiores */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 print-kpis">
         <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
