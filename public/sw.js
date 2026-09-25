@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vocacion-app-v4';
+const CACHE_NAME = 'vocacion-app-v5';
 const ASSETS = [
   '/',
   '/index.html',

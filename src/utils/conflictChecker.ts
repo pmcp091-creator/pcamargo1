@@ -25,23 +25,39 @@ export function analyzeConflictsAndRules(sessions: TrainingSession[]): ConflictA
 
     const uniqueInstitutions = Array.from(institutionMap.keys());
 
-    // Separate rural field missions from urban teacher meetings
-    const ruralSessions = daySessions.filter(
-      s => !s.campus?.toLowerCase().includes('casco urbano') && !(s.institution || '').toLowerCase().includes('casco urbano')
-    );
-    const ruralInstitutions = Array.from(new Set(ruralSessions.map(s => s.institution || '')));
+    // Regla oficial Uribia: Máximo 2 instituciones físicas distintas por día (si una institución tiene 2 o más sesiones en el mismo día, cuenta como 1 sola institución).
+    // Analizar por fecha real de ejecución (evitando falsas alarmas entre semanas alternas quincenales)
+    const datesMap = new Map<string, Set<string>>();
+    daySessions.forEach(s => {
+      const dates = (s.specificDates && s.specificDates.length > 0)
+        ? s.specificDates
+        : [s.specificDate || s.date || ''];
+      dates.filter(Boolean).forEach(d => {
+        if (!datesMap.has(d)) datesMap.set(d, new Set<string>());
+        const baseInst = (s.institution || '').replace(/\s*-\s*Sede.*$/i, '').trim();
+        datesMap.get(d)!.add(baseInst);
+      });
+    });
 
-    // If more than 2 institutions are assigned on this day, verify if they are separated by alternating biweekly weeks (quincenal) or urban location
-    if (ruralInstitutions.length > 2) {
+    let conflictDate: string | null = null;
+    let conflictCount = 0;
+    datesMap.forEach((instSet, d) => {
+      if (instSet.size > 2) {
+        conflictDate = d;
+        conflictCount = instSet.size;
+      }
+    });
+
+    if (conflictDate) {
       alerts.push({
         id: `uribia-conflict-${day.toLowerCase()}`,
         municipality: 'Uribia',
         dayOfWeek: day,
         severity: 'high',
-        title: `Cruce Crítico en Uribia: Más de 2 sedes rurales en día ${day}`,
-        description: `Se detectaron ${ruralInstitutions.length} instituciones asignadas de manera presencial en sedes rurales el día ${day} (${ruralInstitutions.join(', ')}). La regla oficial del proyecto establece un máximo de 2 instituciones por día.`,
-        affectedSessions: ruralSessions,
-        suggestedAction: `Verificar que operen en semanas alternas (rotación quincenal) o que las sesiones docentes se concentren en el casco urbano.`
+        title: `Cruce Crítico en Uribia: Más de 2 instituciones en fecha ${conflictDate}`,
+        description: `Se detectaron ${conflictCount} instituciones asignadas de manera presencial el día ${day} (${conflictDate}). La regla oficial del proyecto establece un máximo de 2 instituciones por día.`,
+        affectedSessions: daySessions,
+        suggestedAction: `Verificar rotación de fechas o cupo logístico de la sede.`
       });
     }
   });

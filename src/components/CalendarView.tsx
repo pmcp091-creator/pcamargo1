@@ -550,8 +550,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 className="bg-slate-50 dark:bg-slate-800 text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-slate-800 dark:text-white focus:outline-none focus:border-amber-400"
               >
                 <option value="all">Toda la población</option>
-                <option value="Docentes">Solo Docentes</option>
                 <option value="Estudiantes">Solo Estudiantes</option>
+                <option value="Docentes">Docentes (0 - Pausado)</option>
               </select>
             </div>
 

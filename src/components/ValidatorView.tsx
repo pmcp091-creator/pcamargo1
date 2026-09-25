@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TrainingSession, ConflictAlert } from '../types/schedule';
+import { validarLimiteUribia } from '../utils/validarCronograma';
 import { 
   ShieldAlert, 
   ShieldCheck, 
@@ -51,8 +52,80 @@ export const ValidatorView: React.FC<ValidatorViewProps> = ({
   const mediumAlerts = alerts.filter(a => a.severity === 'medium');
   const infoAlerts = alerts.filter(a => a.severity === 'info');
 
+  // Validador determinístico exacto de fechas en Uribia
+  const uribiaDeterministic = useMemo(() => validarLimiteUribia(sessions), [sessions]);
+
   return (
     <div className="space-y-5">
+      {/* Tarjeta Diagnóstica: Validador Determinístico de Uribia */}
+      <div className={`p-4 sm:p-5 rounded-xl border ${
+        uribiaDeterministic.valido 
+          ? 'bg-emerald-50/70 border-emerald-200' 
+          : 'bg-amber-50/70 border-amber-300'
+      } shadow-xs`}>
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className={`p-2 rounded-lg ${
+              uribiaDeterministic.valido ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
+            }`}>
+              {uribiaDeterministic.valido ? <CheckCircle2 className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5" />}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-slate-900">
+                  Validador Determinístico Uribia (Regla Máx. 2 Sedes/Día)
+                </h3>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                  uribiaDeterministic.valido 
+                    ? 'bg-emerald-200 text-emerald-900' 
+                    : 'bg-amber-200 text-amber-900'
+                }`}>
+                  {uribiaDeterministic.valido ? 'Válido (0 conflictos)' : `${uribiaDeterministic.conflictos.length} fechas con conflicto`}
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-1">
+                {uribiaDeterministic.valido 
+                  ? 'Todas las fechas del cronograma en Uribia respetan el cupo logístico territorial (máximo 2 instituciones distintas por fecha).'
+                  : 'Modo detección activo: se reportan fechas que superan 2 instituciones en Uribia sin reprogramar automáticamente.'}
+              </p>
+            </div>
+          </div>
+          <span className="text-[11px] font-semibold text-slate-500 bg-white/80 px-2.5 py-1 rounded-md border border-slate-200 self-start">
+            Filtro Canónico: Municipio Uribia
+          </span>
+        </div>
+
+        {!uribiaDeterministic.valido && (
+          <div className="mt-4 pt-3 border-t border-amber-200/80 space-y-2.5">
+            <div className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+              <span>Fechas detectadas con más de 2 sedes simultáneas:</span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              {uribiaDeterministic.conflictos.map((c, idx) => (
+                <div key={c.fecha} className="p-2.5 bg-white rounded-lg border border-amber-200 text-xs shadow-2xs">
+                  <div className="flex items-center justify-between font-bold text-slate-800 mb-1.5">
+                    <span className="flex items-center gap-1.5 text-amber-900">
+                      <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                      {c.fecha}
+                    </span>
+                    <span className="bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded text-[11px]">
+                      {c.instituciones.length} sedes
+                    </span>
+                  </div>
+                  <ul className="space-y-1 text-slate-600 pl-2 border-l-2 border-amber-300">
+                    {c.instituciones.map(inst => (
+                      <li key={inst} className="text-[11px] leading-tight truncate" title={inst}>
+                        • {inst}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Top Banner */}
       <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

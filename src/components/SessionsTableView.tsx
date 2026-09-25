@@ -347,8 +347,8 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                 className="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer"
               >
                 <option value="all">👥 Toda Audiencia</option>
-                <option value="Docentes">Docentes</option>
                 <option value="Estudiantes">Estudiantes</option>
+                <option value="Docentes">Docentes (0 - Pausado)</option>
               </select>
             )}
 
@@ -398,8 +398,8 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
             >
               <option value="date-asc">📅 Fecha: más lejana a reciente (Por defecto)</option>
               <option value="date-desc">📅 Fecha: más reciente a más lejana</option>
-              <option value="item-asc">🔢 Ordenar por ítem (1 → 470)</option>
-              <option value="item-desc">🔢 Ordenar por ítem (470 → 1)</option>
+              <option value="item-asc">🔢 Ordenar por ítem (1 → {totalCount})</option>
+              <option value="item-desc">🔢 Ordenar por ítem ({totalCount} → 1)</option>
             </select>
 
             {/* Botón limpiar filtros */}
@@ -439,7 +439,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                         }
                       }}
                       className="flex items-center gap-1 font-bold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 transition cursor-pointer"
-                      title={sortBy === 'itemNumber' ? `Ítem: ${sortOrder === 'asc' ? '1 a 470' : '470 a 1'}` : 'Ordenar por ítem'}
+                      title={sortBy === 'itemNumber' ? `Ítem: ${sortOrder === 'asc' ? `1 a ${totalCount}` : `${totalCount} a 1`}` : 'Ordenar por ítem'}
                     >
                       <span>#</span>
                       <ArrowUpDown className={`w-3 h-3 ${sortBy === 'itemNumber' ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400'}`} />
@@ -486,7 +486,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                           }}
                           className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer ${sortBy === 'itemNumber' && sortOrder === 'asc' ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-blue-950/30' : 'text-slate-700 dark:text-slate-200'}`}
                         >
-                          <span>🔢 Por ítem (1 a 470)</span>
+                          <span>🔢 Por ítem (1 a {totalCount})</span>
                           {sortBy === 'itemNumber' && sortOrder === 'asc' && <Check className="w-3.5 h-3.5" />}
                         </button>
                         <button
@@ -498,7 +498,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                           }}
                           className={`w-full text-left px-3 py-2 flex items-center justify-between hover:bg-slate-100 dark:hover:bg-slate-700 transition cursor-pointer ${sortBy === 'itemNumber' && sortOrder === 'desc' ? 'text-blue-600 dark:text-blue-400 font-bold bg-blue-50/50 dark:bg-blue-950/30' : 'text-slate-700 dark:text-slate-200'}`}
                         >
-                          <span>🔢 Por ítem (470 a 1)</span>
+                          <span>🔢 Por ítem ({totalCount} a 1)</span>
                           {sortBy === 'itemNumber' && sortOrder === 'desc' && <Check className="w-3.5 h-3.5" />}
                         </button>
                         <div className="border-t border-slate-100 dark:border-slate-700/60 my-1" />

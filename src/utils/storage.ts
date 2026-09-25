@@ -1,10 +1,11 @@
 import { TrainingSession, InstitutionProfile, BrandingSettings, BackupSnapshot } from '../types/schedule';
 import { INITIAL_SESSIONS, INITIAL_INSTITUTIONS, DEFAULT_BRANDING } from '../data/initialData';
 import { USER_LOADED_SESSIONS } from '../data/userLoadedSessions';
+import { isObsoleteUribiaSession } from './scheduleGenerator';
 import { exportToExcelFile } from './excelExport';
 
 const STORAGE_KEYS = {
-  SESSIONS: 'biz_cronograma_sessions_v4',
+  SESSIONS: 'biz_cronograma_sessions_v5_estudiantes',
   INSTITUTIONS: 'biz_cronograma_institutions_v4',
   BRANDING: 'biz_cronograma_branding_v3',
   SNAPSHOTS: 'biz_cronograma_snapshots_v1',
@@ -19,7 +20,8 @@ const sanitizeSession = (s: any): TrainingSession => {
     municipality: s.municipality || 'Uribia',
     modality: s.modality || 'Presencial',
     trainingType: s.trainingType || '',
-    targetAudience: Array.isArray(s.targetAudience) ? s.targetAudience : (s.targetAudience ? [s.targetAudience] : ['Estudiantes']),
+    targetAudience: 'Estudiantes',
+    targetPopulation: 'Estudiantes',
     datesScheduled: s.datesScheduled || {}
   };
 };
@@ -30,38 +32,22 @@ export function loadSessions(): TrainingSession[] {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map(sanitizeSession);
-      }
-    }
-
-    // Migration from v2 if available: replace pending Jaipa & Yotojoroin with the approved sessions
-    const savedV2 = localStorage.getItem('biz_cronograma_sessions_v2');
-    if (savedV2) {
-      const parsedV2 = JSON.parse(savedV2);
-      if (Array.isArray(parsedV2) && parsedV2.length > 0) {
-        // Keep any custom sessions the user added, but ensure Jaipa and Yotojoroin are the official ones
-        const nonJaipaYoto = parsedV2.filter(
-          (s: TrainingSession) =>
-            !(s.institution || '').toLowerCase().includes('jaipa') &&
-            !(s.institution || '').toLowerCase().includes('yotojoroin') &&
-            s.id !== 'S37' &&
-            s.id !== 'S38'
-        );
-        const newJaipaYoto = USER_LOADED_SESSIONS.filter(
-          s =>
-            (s.institution || '').toLowerCase().includes('jaipa') ||
-            (s.institution || '').toLowerCase().includes('yotojoroin')
-        );
-        const merged = [...nonJaipaYoto, ...newJaipaYoto].map(sanitizeSession);
-        localStorage.setItem(STORAGE_KEYS.SESSIONS, JSON.stringify(merged));
-        return merged;
+        const cleanList = parsed
+          .filter((s: any) => 
+            !(s.targetAudience || '').toLowerCase().includes('docente') &&
+            !(s.targetPopulation || '').toLowerCase().includes('docente') &&
+            !(s.trainingType || '').toLowerCase().includes('docente') &&
+            !isObsoleteUribiaSession(s)
+          )
+          .map(sanitizeSession);
+        if (cleanList.length === 332) return cleanList;
       }
     }
   } catch (err) {
     console.error('Error loading sessions from storage:', err);
   }
-  // Default to the complete 45 sessions from the user's official coordination schedule
-  return USER_LOADED_SESSIONS.map(sanitizeSession);
+  // Matriz maestra oficial actualizada: solo estudiantes (0 docentes, 332 sesiones oficiales)
+  return USER_LOADED_SESSIONS.filter(s => !isObsoleteUribiaSession(s)).map(sanitizeSession);
 }
 
 export function saveSessions(sessions: TrainingSession[]): void {

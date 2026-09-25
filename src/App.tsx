@@ -24,6 +24,8 @@ import {
   setEmergencyUndoSnapshot 
 } from './utils/storage';
 import { analyzeConflictsAndRules } from './utils/conflictChecker';
+import { validarLimiteUribia, reportarDiagnosticoUribia } from './utils/validarCronograma';
+import { isObsoleteUribiaSession, purgeObsoleteUribiaSessions } from './utils/scheduleGenerator';
 import { sortSessions, SessionSortField, SortOrder } from './utils/sorting';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { loadHtml2Pdf } from './utils/pdfExport';
@@ -100,12 +102,15 @@ export const deduplicateSessions = (rawSessions: TrainingSession[]): TrainingSes
 export default function App() {
   const isOnline = useOnlineStatus();
 
-  const STORAGE_KEY = 'cronograma_oficial_470_sep_dic_2026';
+  const STORAGE_KEY = 'cronograma_oficial_estudiantes_332_sin_duplicados_sep_dic_2026';
 
   // App State with Persistence: sesiones individuales reales de calendario (Sep - Dic 2026)
   const [sessions, setSessions] = useState<TrainingSession[]>(() => {
     try {
-      // Limpiar versiones anteriores que contenían datos antiguos o inconsistencias
+      // Limpiar versiones anteriores que contenían datos antiguos, sesiones docentes o duplicados de rotación
+      localStorage.removeItem('cronograma_oficial_estudiantes_uribia_validado_sep_dic_2026');
+      localStorage.removeItem('cronograma_oficial_estudiantes_sep_dic_2026');
+      localStorage.removeItem('cronograma_oficial_470_sep_dic_2026');
       localStorage.removeItem('cronograma_completo_sep_dic_2026');
       localStorage.removeItem('cronograma_full_463_sep_dic_2026');
       localStorage.removeItem('cronograma_official_sep_dic_2026');
@@ -120,8 +125,16 @@ export default function App() {
         const parsed = JSON.parse(saved);
         if (
           Array.isArray(parsed) && 
-          parsed.length === 470 &&
-          !parsed.some(s => s.modality === 'Microlearning' || (s.institution || '').toLowerCase().includes('pajaro'))
+          parsed.length === 332 &&
+          validarLimiteUribia(parsed).valido &&
+          !parsed.some(s => 
+            s.modality === 'Microlearning' || 
+            (s.institution || '').toLowerCase().includes('pajaro') ||
+            (s.targetAudience || '').toLowerCase().includes('docente') ||
+            (s.targetPopulation || '').toLowerCase().includes('docente') ||
+            (s.trainingType || '').toLowerCase().includes('docente') ||
+            isObsoleteUribiaSession(s)
+          )
         ) {
           const expanded = expandToIndividualSessions(parsed);
           return deduplicateSessions(expanded).map((s, idx) => ({
@@ -134,11 +147,15 @@ export default function App() {
         ? initialValidatedSessions 
         : [];
       const expanded = expandToIndividualSessions(source);
-      const cleanData = deduplicateSessions(expanded).map((s, idx) => ({
-        ...s,
-        itemNumber: idx + 1
-      }));
+      const cleanData = deduplicateSessions(expanded)
+        .filter(s => !isObsoleteUribiaSession(s))
+        .map((s, idx) => ({
+          ...s,
+          itemNumber: idx + 1
+        }));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));
+      // Validación determinística territorial de Uribia
+      reportarDiagnosticoUribia(validarLimiteUribia(cleanData));
       return cleanData;
     } catch (e) {
       return [];
@@ -292,13 +309,22 @@ export default function App() {
       ...s,
       itemNumber: idx + 1
     }));
+    reportarDiagnosticoUribia(validarLimiteUribia(initialClean));
 
     // Garantía Offline Inmediata: Si Firestore no responde en 1.5s por falta de red,
-    // asegurar inmediatamente la carga de las 470 sesiones oficiales sin esperas infinitas
+    // asegurar inmediatamente la carga de las sesiones oficiales de estudiantes sin esperas infinitas
     const offlineGraceTimer = setTimeout(() => {
       setFirebaseSyncStatus((prev) => (prev === 'connecting' ? 'offline' : prev));
       setSessions((prev) => {
-        if (prev && prev.length >= 400) return prev;
+        if (
+          prev && 
+          prev.length > 0 && 
+          !prev.some(s => 
+            (s.targetAudience || '').toLowerCase().includes('docente') ||
+            (s.targetPopulation || '').toLowerCase().includes('docente') ||
+            (s.trainingType || '').toLowerCase().includes('docente')
+          )
+        ) return prev;
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           try {
@@ -313,24 +339,46 @@ export default function App() {
     const unsubscribeSessions = subscribeToSessions((firestoreSessions) => {
       clearTimeout(offlineGraceTimer);
       if (firestoreSessions.length > 0) {
-        // Filtrar localmente registros no deseados (El Pájaro o Microlearning)
+        // Filtrar localmente registros no deseados (El Pájaro, Microlearning, Docentes y fechas viejas de rotación)
         const cleanSessions = firestoreSessions.filter(
           s => s.modality !== 'Microlearning' &&
                !(s.institution || '').toLowerCase().includes('pajaro') &&
-               !(s.institution || '').toLowerCase().includes('pájaro')
+               !(s.institution || '').toLowerCase().includes('pájaro') &&
+               !(s.targetAudience || '').toLowerCase().includes('docente') &&
+               !(s.targetPopulation || '').toLowerCase().includes('docente') &&
+               !(s.trainingType || '').toLowerCase().includes('docente') &&
+               !isObsoleteUribiaSession(s)
         );
 
         const clean = deduplicateSessions(cleanSessions);
-        // Si hay sesiones válidas en Firestore, utilizarlas como estado de la aplicación
-        if (clean.length > 0) {
+        // Garantizar exactamente 332 sesiones oficiales limpias en estado
+        if (clean.length === 332) {
           setSessions(clean);
         } else {
           setSessions(initialClean);
         }
         setFirebaseSyncStatus('synced');
+
+        // Si Firestore tiene sesiones docentes obsoletas, fechas viejas de Uribia o recuento distinto de 332, resincronizar
+        const uribiaCheck = validarLimiteUribia(clean);
+        const hasLegacyOrDocentesOrConflicts = 
+          !uribiaCheck.valido ||
+          clean.length !== 332 ||
+          firestoreSessions.length !== 332 ||
+          firestoreSessions.some(
+            s => (s.targetAudience || '').toLowerCase().includes('docente') ||
+                 (s.targetPopulation || '').toLowerCase().includes('docente') ||
+                 (s.trainingType || '').toLowerCase().includes('docente') ||
+                 !s.id.startsWith('SES-') ||
+                 isObsoleteUribiaSession(s)
+          );
+        if (hasLegacyOrDocentesOrConflicts && !hasAttemptedSeed) {
+          hasAttemptedSeed = true;
+          resetFirestoreSessions(initialClean).catch(err => console.warn('Resincronizando Firestore con matriz territorial Uribia validada (332 sesiones):', err));
+        }
       } else if (!hasAttemptedSeed) {
         hasAttemptedSeed = true;
-        // Si Firestore está vacío, sembramos la matriz oficial inicial completa Sep - Dic 2026
+        // Si Firestore está vacío, sembramos la matriz oficial inicial completa Sep - Dic 2026 (solo estudiantes)
         seedFirestoreIfEmpty(initialClean).then((seeded) => {
           if (seeded) {
             setFirebaseSyncStatus('synced');
@@ -343,7 +391,15 @@ export default function App() {
       setFirebaseSyncStatus('offline');
       // En modo sin conexión, garantizar carga instantánea desde memoria local
       setSessions((prev) => {
-        if (prev && prev.length >= 400) return prev;
+        if (
+          prev && 
+          prev.length > 0 && 
+          !prev.some(s => 
+            (s.targetAudience || '').toLowerCase().includes('docente') ||
+            (s.targetPopulation || '').toLowerCase().includes('docente') ||
+            (s.trainingType || '').toLowerCase().includes('docente')
+          )
+        ) return prev;
         const saved = localStorage.getItem(STORAGE_KEY);
         if (saved) {
           try {
@@ -354,6 +410,7 @@ export default function App() {
         return initialClean;
       });
     });
+
 
     // 4. Suscripción en Tiempo Real a las solicitudes de cambio
     const unsubscribeRequests = subscribeToChangeRequests((firestoreRequests) => {

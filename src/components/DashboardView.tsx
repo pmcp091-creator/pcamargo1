@@ -43,7 +43,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     [sessions]
   );
 
-  // Regla Uribia (Días con sobrecupo de más de 2 sedes presenciales simultáneas)
+  // Regla Uribia (Días con sobrecupo de más de 2 instituciones presenciales simultáneas)
+  // Según regla maestra: Máximo 2 instituciones físicas distintas por día (si una institución tiene 2 o más sesiones en el mismo día, cuenta como 1 sola institución)
   const uribiaOvercapacityDays = useMemo(() => {
     const countsByDate: Record<string, Set<string>> = {};
     sessions
@@ -58,7 +59,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           : [s.date || s.specificDate].filter((d): d is string => Boolean(d));
         datesToCheck.forEach(dateKey => {
           if (!countsByDate[dateKey]) countsByDate[dateKey] = new Set();
-          countsByDate[dateKey].add((s.campus || s.institution)?.trim());
+          // Agrupar por institución matriz (si tiene múltiples sedes o sesiones el mismo día, cuenta como 1)
+          const baseInst = (s.institution || '').replace(/\s*-\s*Sede.*$/i, '').trim();
+          countsByDate[dateKey].add(baseInst);
         });
       });
     return Object.values(countsByDate).filter(institutionsSet => institutionsSet.size > 2).length;
