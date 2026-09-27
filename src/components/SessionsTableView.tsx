@@ -22,8 +22,10 @@ import {
   Layers,
   ArrowUpDown,
   ChevronDown,
-  Check
+  Check,
+  Lock
 } from 'lucide-react';
+import { esSesionHistorica } from '../utils/uribiaValidator';
 
 export interface SessionsTableViewProps {
   sessions: TrainingSession[];
@@ -625,12 +627,15 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                   const isPending = session.status === 'PDTE';
                   const isPresencial = session.modality === 'Presencial';
                   const executionDate = session.specificDate || session.date || '2026-09-15';
+                  const isPast = esSesionHistorica(executionDate);
 
                   return (
                     <tr
                       key={session.id || `row-${idx}`}
                       className={`hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition ${
-                        isPending
+                        isPast
+                          ? 'opacity-75 bg-slate-100/60 dark:bg-slate-900/40 border-l-4 border-l-slate-400 dark:border-l-slate-600'
+                          : isPending
                           ? 'bg-amber-50/40 dark:bg-amber-950/20'
                           : idx % 2 === 0
                           ? 'bg-white dark:bg-slate-900'
@@ -684,6 +689,13 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                         <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                           {session.daysOfWeek && session.daysOfWeek.length > 0 ? session.daysOfWeek.join(', ') : 'Día programado'}
                         </div>
+                        {isPast && (
+                          <div className="mt-1">
+                            <span className="inline-flex items-center gap-1 text-[9px] font-black px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700">
+                              <Lock className="w-2.5 h-2.5 text-amber-500 shrink-0" /> Histórico
+                            </span>
+                          </div>
+                        )}
                       </td>
 
                       {/* Jornada & Audiencia */}
@@ -770,7 +782,17 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
 
                       {/* Acciones */}
                       <td className="py-2.5 px-3 text-center print:hidden">
-                        {isAdmin ? (
+                        {isPast ? (
+                          <div className="flex items-center justify-center">
+                            <span 
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-bold border border-slate-200 dark:border-slate-700" 
+                              title="Sesión histórica protegida: no se puede editar ni suprimir"
+                            >
+                              <Lock className="w-3 h-3 text-slate-400" />
+                              <span>Histórico</span>
+                            </span>
+                          </div>
+                        ) : isAdmin ? (
                           <div className="flex items-center justify-center gap-1">
                             <button
                               id={`btn-edit-${session.id}`}

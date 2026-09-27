@@ -19,9 +19,11 @@ import {
   BookOpen,
   Eye,
   Info,
-  X
+  X,
+  Lock
 } from 'lucide-react';
 import { SessionDetailModal } from './SessionDetailModal';
+import { esSesionHistorica } from '../utils/uribiaValidator';
 
 export interface CalendarViewProps {
   sessions: TrainingSession[];
@@ -751,14 +753,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                   {/* Event Badges List inside cell */}
                   <div className="space-y-1 overflow-y-auto max-h-[85px] pr-0.5 scrollbar-thin">
                     {sortedDaySessions.map(session => {
+                      const isPast = esSesionHistorica(session.specificDate || session.date);
+
                       // Badge color styling based on Municipality & Modality
                       let badgeClasses = 'border-sky-500/40 bg-sky-950/60 text-sky-200 hover:border-sky-400';
-                      if (session.municipality.toUpperCase() === 'URIBIA') {
+                      if (isPast) {
+                        badgeClasses = 'border-slate-600/50 bg-slate-900/80 text-slate-400 opacity-60 hover:opacity-100 hover:border-slate-500';
+                      } else if (session.municipality.toUpperCase() === 'URIBIA') {
                         badgeClasses = 'border-amber-500/40 bg-amber-950/60 text-amber-200 hover:border-amber-400';
                       } else if (session.municipality.toUpperCase() === 'MANAURE') {
                         badgeClasses = 'border-emerald-500/40 bg-emerald-950/60 text-emerald-200 hover:border-emerald-400';
                       }
-                      if (session.modality === 'Virtual') {
+                      if (!isPast && session.modality === 'Virtual') {
                         badgeClasses = 'border-purple-500/40 bg-purple-950/60 text-purple-200 hover:border-purple-400';
                       }
 
@@ -780,18 +786,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             setSelectedSessionForDetail(session);
                           }}
                           className={`border ${badgeClasses} rounded-lg p-1 text-[10px] leading-tight hover:scale-[1.02] hover:brightness-110 transition cursor-pointer flex flex-col gap-0.5 shadow-xs`}
-                          title="Haz clic para ver todos los detalles de esta sesión"
+                          title={isPast ? "🔒 Sesión histórica (anterior a hoy) - Protegida / Solo Lectura" : "Haz clic para ver todos los detalles de esta sesión"}
                         >
                           <div className="flex items-center justify-between font-bold">
-                            <span className="truncate max-w-[95px]">{shortInst}</span>
+                            <span className="truncate max-w-[85px] flex items-center gap-1">
+                              {isPast && <Lock className="w-2.5 h-2.5 text-slate-400 shrink-0 inline" />}
+                              <span>{shortInst}</span>
+                            </span>
                             <span className="text-[10px] opacity-90">{session.modality === 'Presencial' ? '🏛️' : '💻'}</span>
                           </div>
                           <div className="text-[9px] text-slate-300 truncate flex items-center justify-between">
                             <span>{session.startTime || ''}</span>
                             <span className="font-mono text-[8px] bg-black/40 px-1 rounded">
-                              {tType.includes('Técnicas') || tType.includes('CT') ? 'CT' :
+                              {isPast ? 'HIST' : (tType.includes('Técnicas') || tType.includes('CT') ? 'CT' :
                                tType.includes('Blandas') || tType.includes('HB') ? 'HB' :
-                               tType.includes('Docente') ? 'Doc' : 'Cap'}
+                               tType.includes('Docente') ? 'Doc' : 'Cap')}
                             </span>
                           </div>
                         </div>
@@ -947,39 +956,55 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                         {isWeekend ? 'Fin de semana' : 'Sin sesiones'}
                       </p>
                     ) : (
-                      daySessionsUnique.map(session => (
-                        <div
-                          key={session.id}
-                          onClick={() => setSelectedSessionForDetail(session)}
-                          className="p-2 bg-white dark:bg-slate-900/90 rounded-lg border border-slate-200 dark:border-slate-700/80 hover:border-amber-400 transition cursor-pointer space-y-1 shadow-2xs hover:shadow-xs group"
-                        >
-                          <div className="flex items-start justify-between gap-1">
-                            <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition" title={session.institution}>
-                              {session.institution}
-                            </span>
-                            <span
-                              className={`text-[9px] font-bold px-1 py-0.2 rounded shrink-0 ${
-                                (session.municipality || '').toUpperCase() === 'URIBIA'
-                                  ? 'bg-amber-100 dark:bg-amber-400/20 text-amber-800 dark:text-amber-300'
-                                  : (session.municipality || '').toUpperCase() === 'RIOHACHA'
-                                  ? 'bg-sky-100 dark:bg-sky-400/20 text-sky-800 dark:text-sky-300'
-                                  : 'bg-emerald-100 dark:bg-emerald-400/20 text-emerald-800 dark:text-emerald-300'
-                              }`}
-                            >
-                              {session.municipality}
-                            </span>
-                          </div>
+                      daySessionsUnique.map(session => {
+                        const isPast = esSesionHistorica(session.specificDate || session.date);
+                        return (
+                          <div
+                            key={session.id}
+                            onClick={() => setSelectedSessionForDetail(session)}
+                            className={`p-2 rounded-lg border transition cursor-pointer space-y-1 shadow-2xs hover:shadow-xs group ${
+                              isPast
+                                ? 'bg-slate-100/70 dark:bg-slate-900/40 border-slate-300 dark:border-slate-800 opacity-65 hover:opacity-100'
+                                : 'bg-white dark:bg-slate-900/90 border-slate-200 dark:border-slate-700/80 hover:border-amber-400'
+                            }`}
+                            title={isPast ? "🔒 Sesión histórica (anterior a hoy) - Protegida / Solo Lectura" : "Haz clic para ver detalles"}
+                          >
+                            <div className="flex items-start justify-between gap-1">
+                              <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition flex items-center gap-1" title={session.institution}>
+                                {isPast && <Lock className="w-2.5 h-2.5 text-slate-400 shrink-0 inline" />}
+                                <span className="truncate">{session.institution}</span>
+                              </span>
+                              <div className="flex items-center gap-1 shrink-0">
+                                {isPast && (
+                                  <span className="text-[8px] font-extrabold px-1 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                                    Histórico
+                                  </span>
+                                )}
+                                <span
+                                  className={`text-[9px] font-bold px-1 py-0.2 rounded shrink-0 ${
+                                    (session.municipality || '').toUpperCase() === 'URIBIA'
+                                      ? 'bg-amber-100 dark:bg-amber-400/20 text-amber-800 dark:text-amber-300'
+                                      : (session.municipality || '').toUpperCase() === 'RIOHACHA'
+                                      ? 'bg-sky-100 dark:bg-sky-400/20 text-sky-800 dark:text-sky-300'
+                                      : 'bg-emerald-100 dark:bg-emerald-400/20 text-emerald-800 dark:text-emerald-300'
+                                  }`}
+                                >
+                                  {session.municipality}
+                                </span>
+                              </div>
+                            </div>
 
-                          <div className="flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-300">
-                            <span>{session.startTime} - {session.endTime}</span>
-                            <span className="font-semibold text-slate-500 dark:text-slate-400">{session.modality}</span>
-                          </div>
+                            <div className="flex items-center justify-between text-[10px] text-slate-600 dark:text-slate-300">
+                              <span>{session.startTime} - {session.endTime}</span>
+                              <span className="font-semibold text-slate-500 dark:text-slate-400">{session.modality}</span>
+                            </div>
 
-                          <div className="text-[10px] text-indigo-600 dark:text-indigo-300 truncate font-medium" title={session.trainingType}>
-                            {session.trainingType}
+                            <div className="text-[10px] text-indigo-600 dark:text-indigo-300 truncate font-medium" title={session.trainingType}>
+                              {session.trainingType}
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>

@@ -25,7 +25,8 @@ import {
 } from './utils/storage';
 import { analyzeConflictsAndRules } from './utils/conflictChecker';
 import { validarLimiteUribia, reportarDiagnosticoUribia } from './utils/validarCronograma';
-import { validarReglaUribia, asegurarReglaUribia } from './utils/uribiaValidator';
+import { validarReglaUribia, asegurarReglaUribia, esSesionHistorica } from './utils/uribiaValidator';
+import { generateMasterSchedule } from './utils/scheduleGenerator';
 import { sortSessions, SessionSortField, SortOrder, ordenarSesionesDelDia } from './utils/sorting';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
 import { loadHtml2Pdf } from './utils/pdfExport';
@@ -40,6 +41,8 @@ import {
   syncSaveChangeRequest, 
   seedFirestoreIfEmpty, 
   resetFirestoreSessions,
+  createSessionsBackup,
+  restoreSessionsFromBackup,
   auth,
   signInWithGoogle,
   logoutUser,
@@ -61,6 +64,7 @@ import { QuickAssignModal } from './components/QuickAssignModal';
 import { BackupModal } from './components/BackupModal';
 import { PedroGuideModal } from './components/PedroGuideModal';
 import { RequestRescheduleModal } from './components/RequestRescheduleModal';
+import { ResetScheduleModal } from './components/ResetScheduleModal';
 import { DashboardView } from './components/DashboardView';
 import { InstitutionalKioskView } from './components/InstitutionalKioskView';
 import { 
@@ -102,12 +106,13 @@ export const deduplicateSessions = (rawSessions: TrainingSession[]): TrainingSes
 export default function App() {
   const isOnline = useOnlineStatus();
 
-  const STORAGE_KEY = 'cronograma_oficial_estudiantes_v10_uribia_clean';
+  const STORAGE_KEY = 'cronograma_oficial_estudiantes_v11_332_clean';
 
   // App State with Persistence: sesiones individuales reales de calendario (Sep - Dic 2026)
   const [sessions, setSessions] = useState<TrainingSession[]>(() => {
     try {
       // Limpiar versiones anteriores que contenían datos antiguos, conflictos de Uribia o sesiones docentes
+      localStorage.removeItem('cronograma_oficial_estudiantes_v10_uribia_clean');
       localStorage.removeItem('cronograma_oficial_estudiantes_sep_dic_2026');
       localStorage.removeItem('cronograma_oficial_470_sep_dic_2026');
       localStorage.removeItem('cronograma_completo_sep_dic_2026');
@@ -150,9 +155,10 @@ export default function App() {
         itemNumber: idx + 1
       }));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanData));
-      // Validación determinística territorial de Uribia
-      asegurarReglaUribia(cleanData);
-      reportarDiagnosticoUribia(validarLimiteUribia(cleanData));
+      // Validación determinística territorial de Uribia sobre sesiones futuras
+      const futureData = cleanData.filter(s => !esSesionHistorica(s.specificDate || s.date));
+      asegurarReglaUribia(futureData);
+      reportarDiagnosticoUribia(validarLimiteUribia(futureData));
       return cleanData;
     } catch (e) {
       console.error('Error inicializando sesiones maestras:', e);
@@ -211,6 +217,8 @@ export default function App() {
   const [rescheduleSessionTarget, setRescheduleSessionTarget] = useState<TrainingSession | null>(null);
   const [sessionToDelete, setSessionToDelete] = useState<TrainingSession | null>(null);
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState<boolean>(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Dark Mode Theme State & Persistence
@@ -307,7 +315,8 @@ export default function App() {
       ...s,
       itemNumber: idx + 1
     }));
-    reportarDiagnosticoUribia(validarLimiteUribia(initialClean));
+    const futureInitial = initialClean.filter(s => !esSesionHistorica(s.specificDate || s.date));
+    reportarDiagnosticoUribia(validarLimiteUribia(futureInitial));
 
     // Garantía Offline Inmediata: Si Firestore no responde en 1.5s por falta de red,
     // asegurar inmediatamente la carga de las sesiones oficiales de estudiantes sin esperas infinitas
@@ -348,11 +357,12 @@ export default function App() {
         );
 
         const clean = deduplicateSessions(cleanSessions);
-        // Validar territorialidad de Uribia
-        const uribiaCheck = validarReglaUribia(clean);
+        // Validar territorialidad de Uribia ÚNICAMENTE sobre las sesiones futuras (las históricas ya sucedieron)
+        const futureClean = clean.filter(s => !esSesionHistorica(s.specificDate || s.date));
+        const uribiaCheck = validarReglaUribia(futureClean);
 
-        // Si Firestore tiene sesiones docentes obsoletas, o IDs que no empiezan por SES-, o viola la regla de Uribia, resincronizar
-        const needsReset = !uribiaCheck.valido || firestoreSessions.some(
+        // Si Firestore tiene sesiones docentes obsoletas, o IDs que no empiezan por SES-, o viola la regla de Uribia en futuras, o el conteo difiere de 332, resincronizar
+        const needsReset = !uribiaCheck.valido || clean.length !== 332 || firestoreSessions.some(
           s => (s.targetAudience || '').toLowerCase().includes('docente') ||
                (s.targetPopulation || '').toLowerCase().includes('docente') ||
                (s.trainingType || '').toLowerCase().includes('docente') ||
@@ -361,12 +371,10 @@ export default function App() {
 
         if (needsReset) {
           setSessions(initialClean);
-          if (!hasAttemptedSeed) {
-            hasAttemptedSeed = true;
-            resetFirestoreSessions(initialClean).catch(err => console.warn('Resincronizando Firestore con nuevo cronograma válido:', err));
-          }
+          resetFirestoreSessions(initialClean).catch(err => console.warn('Resincronizando Firestore con nuevo cronograma válido:', err));
         } else if (clean.length > 0) {
           setSessions(clean);
+          reportarDiagnosticoUribia(uribiaCheck);
         } else {
           setSessions(initialClean);
         }
@@ -658,6 +666,10 @@ export default function App() {
 
   const handleEditSession = (session: TrainingSession) => {
     if (sessionRole !== 'admin') return;
+    if (esSesionHistorica(session.specificDate || session.date)) {
+      setToastMessage('🔒 Esta sesión es histórica (anterior a hoy) y está blindada en modo solo lectura.');
+      return;
+    }
     setEditingSession(session);
     setInitialDateForModal(session.specificDate);
     setIsScheduleModalOpen(true);
@@ -665,6 +677,10 @@ export default function App() {
 
   const handleDuplicateSession = (session: TrainingSession) => {
     if (sessionRole !== 'admin') return;
+    if (esSesionHistorica(session.specificDate || session.date)) {
+      setToastMessage('🔒 Las sesiones históricas están protegidas y no pueden ser duplicadas hacia el pasado.');
+      return;
+    }
     const duplicated: TrainingSession = {
       ...session,
       id: `sess-${Date.now()}`,
@@ -681,12 +697,21 @@ export default function App() {
     if (sessionRole !== 'admin') return;
     const target = sessions.find(s => s.id === id);
     if (target) {
+      if (esSesionHistorica(target.specificDate || target.date)) {
+        setToastMessage('🔒 Esta sesión es histórica (anterior a hoy) y está blindada contra eliminación.');
+        return;
+      }
       setSessionToDelete(target);
     }
   };
 
   const handleConfirmDeleteSession = () => {
     if (!sessionToDelete) return;
+    if (esSesionHistorica(sessionToDelete.specificDate || sessionToDelete.date)) {
+      setSessionToDelete(null);
+      setToastMessage('🔒 Operación denegada: sesión histórica blindada contra eliminación.');
+      return;
+    }
     const deletedInst = sessionToDelete.institution;
     const deletedId = sessionToDelete.id;
     setSessions(prev => prev.filter(s => s.id !== deletedId));
@@ -708,6 +733,63 @@ export default function App() {
     });
     syncSaveSession(savedSession).catch(err => console.warn('Error guardando en Firestore:', err));
     setToastMessage(`Sesión de "${savedSession.institution}" guardada exitosamente.`);
+  };
+
+  // Restablecer Matriz Oficial Blindada con Respaldo y Validación
+  const handleConfirmResetMatriz = async () => {
+    setIsResetting(true);
+    let backupIdCreated: string | null = null;
+    try {
+      // 1. Crear automáticamente respaldo con timestamp en Firestore antes de ejecutar el reseteo
+      const currentSessions = [...sessions];
+      const backup = await createSessionsBackup(currentSessions);
+      backupIdCreated = backup.backupId;
+      console.log(`%c[RESPALDO CREADO] Respaldo de seguridad creado: backups/${backup.backupId} con ${backup.count} sesiones (Timestamp: ${backup.timestamp})`, 'color: #3b82f6; font-weight: bold;');
+
+      // 2. Separar sesiones históricas (fecha < hoy) y futuras (fecha >= hoy)
+      const currentHistorical = currentSessions.filter(s => esSesionHistorica(s.specificDate || s.date));
+      const masterSessions = generateMasterSchedule(currentHistorical);
+      const clean = deduplicateSessions(masterSessions).map((s, idx) => ({ ...s, itemNumber: idx + 1 }));
+
+      // Extraer sesiones futuras
+      const futureClean = clean.filter(s => !esSesionHistorica(s.specificDate || s.date));
+
+      // 3. Validar regla territorial de Uribia ÚNICAMENTE sobre sesiones futuras ANTES de guardar en Firestore
+      const uribiaCheck = validarReglaUribia(futureClean);
+      console.log(
+        `%c[VALIDADOR URIBIA ANTES DE GUARDAR] Válido: ${uribiaCheck.valido}, Conflictos: ${uribiaCheck.conflictos.length}`, 
+        uribiaCheck.valido ? 'color: #10B981; font-weight: bold;' : 'color: #EF4444; font-weight: bold;'
+      );
+
+      // Si detecta cualquier conflicto tras la regeneración, CANCELAR y restaurar desde el respaldo
+      if (!uribiaCheck.valido || uribiaCheck.conflictos.length > 0) {
+        console.error('[VALIDADOR URIBIA ERROR] Conflicto territorial detectado tras la regeneración:', uribiaCheck.conflictos);
+        if (backupIdCreated) {
+          console.warn(`[RESTAURANDO] Revertiendo cambios desde respaldo ${backupIdCreated}...`);
+          await restoreSessionsFromBackup(backupIdCreated);
+        }
+        throw new Error(`Se detectaron ${uribiaCheck.conflictos.length} conflictos territoriales en Uribia tras la regeneración. Se canceló el guardado y se restauró el respaldo previo.`);
+      }
+
+      // Asegurar regla territorial estricta
+      asegurarReglaUribia(futureClean);
+
+      // 4. Guardar resultado final en Firestore y sincronizar estado
+      localStorage.removeItem(STORAGE_KEY);
+      setSessions(clean);
+      await resetFirestoreSessions(clean);
+
+      const histCount = clean.filter(s => esSesionHistorica(s.specificDate || s.date)).length;
+      const futCount = clean.length - histCount;
+      setToastMessage(`Matriz oficial restablecida con éxito. Respaldo: ${backup.backupId}. (${histCount} históricas intactas, ${futCount} futuras sincronizadas).`);
+      setIsResetModalOpen(false);
+    } catch (err: any) {
+      console.error('Error durante el restablecimiento de matriz:', err);
+      setToastMessage(`⚠️ Error en restablecimiento: ${err?.message || err}`);
+      throw err;
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   // Guardar, Agregar y Eliminar Instituciones (Coordinador)
@@ -934,16 +1016,10 @@ export default function App() {
               Salir de Coordinación
             </button>
             <button
-              onClick={async () => {
-                if (window.confirm("¿Estás seguro? Se restablecerá el cronograma a la matriz oficial validada y se sincronizará con Firebase.")) {
-                  localStorage.removeItem(STORAGE_KEY);
-                  const clean = deduplicateSessions(initialValidatedSessions).map((s, idx) => ({ ...s, itemNumber: idx + 1 }));
-                  setSessions(clean);
-                  await resetFirestoreSessions(clean).catch(err => console.warn(err));
-                  setToastMessage("Cronograma restablecido a la matriz oficial y sincronizado con Firebase.");
-                }
-              }}
-              className="text-xs text-amber-400 hover:text-amber-300 underline font-medium ml-2 cursor-pointer"
+              id="btn-open-reset-matrix"
+              onClick={() => setIsResetModalOpen(true)}
+              className="text-xs text-amber-400 hover:text-amber-300 underline font-medium ml-2 cursor-pointer flex items-center gap-1"
+              title="Abre el modal de seguridad para restablecer la matriz oficial"
             >
               🔄 Restablecer Matriz Oficial
             </button>
@@ -1758,11 +1834,15 @@ export default function App() {
         }}
         onResetAll={async () => {
           const res = resetToDefaults();
-          setSessions(res.sessions);
+          // Preservar sesiones históricas intactas y regenerar únicamente futuras
+          const currentHistorical = sessions.filter(s => esSesionHistorica(s.specificDate || s.date));
+          const masterSessions = generateMasterSchedule(currentHistorical);
+          const cleanSessions = deduplicateSessions(masterSessions).map((s, idx) => ({ ...s, itemNumber: idx + 1 }));
+          setSessions(cleanSessions);
           setInstitutions(res.institutions);
           setBranding(res.branding);
-          await resetFirestoreSessions(res.sessions).catch(console.warn);
-          setToastMessage('Cronograma restablecido y sincronizado con Firebase.');
+          await resetFirestoreSessions(cleanSessions).catch(console.warn);
+          setToastMessage('Cronograma restablecido (sesiones históricas conservadas intactas).');
         }}
       />
       <PedroGuideModal
@@ -1781,6 +1861,19 @@ export default function App() {
         sessions={sessions}
         restrictedInstName={restrictedInstName || undefined}
         onSubmitRequest={handleSubmitRescheduleRequest}
+      />
+
+      {/* Modal de Confirmación Blindada para Restablecer Matriz Oficial */}
+      <ResetScheduleModal
+        isOpen={isResetModalOpen}
+        onClose={() => {
+          if (!isResetting) setIsResetModalOpen(false);
+        }}
+        onConfirm={handleConfirmResetMatriz}
+        currentSessionCount={sessions.length}
+        historicalCount={sessions.filter(s => esSesionHistorica(s.specificDate || s.date)).length}
+        futureCount={sessions.filter(s => !esSesionHistorica(s.specificDate || s.date)).length}
+        isProcessing={isResetting}
       />
 
       {/* Toast Notification */}

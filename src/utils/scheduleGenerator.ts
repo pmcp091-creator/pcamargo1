@@ -9,6 +9,7 @@ import {
 import { 
   validarReglaUribia, 
   asegurarReglaUribia, 
+  esSesionHistorica,
   Session as ValidatorSession,
   UribiaConflict
 } from './uribiaValidator';
@@ -16,7 +17,8 @@ import { ordenarSesionesDelDia, getStartMinutes } from './sorting';
 
 export {
   validarReglaUribia,
-  asegurarReglaUribia
+  asegurarReglaUribia,
+  esSesionHistorica
 };
 export type {
   ValidatorSession,
@@ -899,7 +901,7 @@ export const MASTER_RULES: MasterRuleGroup[] = [
 // Asigna IDs unívocos basados estrictamente en institución y fecha:
 // FORMATO EXIGIDO: SES-${institucionId}-${fecha}-${horaInicioHHmm}
 // ==============================================================================
-export const generateMasterSchedule = (): TrainingSession[] => {
+export const generateMasterSchedule = (existingHistoricalSessions?: TrainingSession[]): TrainingSession[] => {
   const sessions: TrainingSession[] = [];
   const idOccurrenceMap = new Map<string, number>();
 
@@ -960,11 +962,23 @@ export const generateMasterSchedule = (): TrainingSession[] => {
     });
   });
 
-  // PASO 3 & PASO 5: LLAMAR asegurarReglaUribia ANTES de dar por buena la generación
-  asegurarReglaUribia(sessions);
+  // Separar en sesiones históricas (fecha < hoy) y futuras (fecha >= hoy)
+  const masterHistorical = sessions.filter(s => esSesionHistorica(s.specificDate || s.date));
+  const masterFuture = sessions.filter(s => !esSesionHistorica(s.specificDate || s.date));
+
+  // Conservar las históricas existentes sin tocarlas si se proporcionan
+  const preservedHistorical = (existingHistoricalSessions && existingHistoricalSessions.length > 0)
+    ? existingHistoricalSessions.filter(s => esSesionHistorica(s.specificDate || s.date))
+    : masterHistorical;
+
+  // PASO 4: asegurarReglaUribia ÚNICAMENTE sobre las sesiones futuras tras la regeneración
+  asegurarReglaUribia(masterFuture);
+
+  // Combinar históricas intactas + futuras regeneradas
+  const combinedSessions = [...preservedHistorical, ...masterFuture];
 
   // Ordenar globalmente por fecha ascendente y dentro del día por AM -> PM
-  const sortedSessions = sessions.sort((a, b) => {
+  const sortedSessions = combinedSessions.sort((a, b) => {
     const dateA = a.specificDate || a.date || '';
     const dateB = b.specificDate || b.date || '';
     if (dateA !== dateB) return dateA.localeCompare(dateB);

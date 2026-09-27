@@ -93,18 +93,7 @@ export function getSessionDateForSort(session: TrainingSession): { dateStr: stri
   return { dateStr: '9999-99-99', timestamp: 9999999999999 };
 }
 
-// Convierte cualquier formato de hora a minutos del día (de 0 a 1440) para orden cronológico real AM a PM
-export const getStartMinutes = (item: any): number => {
-  const raw = item.startTime || item.time || item.horario || item.timeRange || '';
-  const match = raw.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-  if (!match) return 9999;
-  let hours = parseInt(match[1], 10);
-  const minutes = parseInt(match[2], 10);
-  const meridian = (match[3] || '').toUpperCase();
-  if (meridian === 'PM' && hours < 12) hours += 12;
-  if (meridian === 'AM' && hours === 12) hours = 0;
-  return hours * 60 + minutes;
-};
+export { getStartMinutes };
 
 // Convierte cadena de hora '07:00 AM' a minutos desde la medianoche para ordenar
 export function parseTimeToMinutes(timeStr?: string): number {

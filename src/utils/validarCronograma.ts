@@ -2,11 +2,14 @@ import { TrainingSession } from '../types/schedule';
 import { 
   validarReglaUribia, 
   asegurarReglaUribia, 
+  esSesionHistorica,
+  obtenerFechaHoy,
   Session as Sesion, 
   UribiaConflict as Conflicto 
 } from './uribiaValidator';
 
 export type { Sesion, Conflicto };
+export { asegurarReglaUribia, esSesionHistorica, obtenerFechaHoy };
 
 export interface ResultadoValidacion {
   valido: boolean;
@@ -42,5 +45,4 @@ export function reportarDiagnosticoUribia(resultado: ResultadoValidacion): void 
   }
 }
 
-export { asegurarReglaUribia };
 export default validarLimiteUribia;

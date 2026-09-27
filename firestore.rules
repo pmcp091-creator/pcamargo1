@@ -52,7 +52,12 @@ service cloud.firestore {
         incoming().institution is string && incoming().institution.size() <= 200 &&
         incoming().modality is string && incoming().modality.size() <= 50;
 
-      allow delete: if isValidId(sessionId);
+      allow delete: if true;
+    }
+
+    // Colección de Respaldos de Matriz
+    match /backups/{backupId} {
+      allow read, write: if true;
     }
 
     // Colección de Solicitudes de Reprogramación

@@ -68,12 +68,28 @@
         "notes": { "type": "string", "maxLength": 1000 }
       },
       "required": ["daneCode", "name", "municipality"]
+    },
+    "Backup": {
+      "title": "Backup",
+      "description": "Copia de respaldo de las sesiones de formación antes de reseteos",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "timestamp": { "type": "string", "maxLength": 50 },
+        "sessionCount": { "type": "number" },
+        "sessions": { "type": "array" }
+      },
+      "required": ["timestamp", "sessionCount", "sessions"]
     }
   },
   "firestore": {
     "/sessions/{sessionId}": {
       "schema": { "$ref": "entities.TrainingSession" },
       "description": "Colección de sesiones de formación del cronograma"
+    },
+    "/backups/{backupId}": {
+      "schema": { "$ref": "entities.Backup" },
+      "description": "Historial de respaldos de matriz de sesiones"
     },
     "/changeRequests/{requestId}": {
       "schema": { "$ref": "entities.ChangeRequest" },

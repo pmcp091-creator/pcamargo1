@@ -49,6 +49,22 @@ export function validarReglaUribia(sesiones: (Session | any)[]): {
   return { valido: conflictos.length === 0, conflictos };
 }
 
+export function obtenerFechaHoy(): string {
+  const ahora = new Date();
+  const year = ahora.getFullYear();
+  const month = String(ahora.getMonth() + 1).padStart(2, '0');
+  const day = String(ahora.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function esSesionHistorica(fechaSesion?: string): boolean {
+  if (!fechaSesion) return false;
+  const fechaLimpia = fechaSesion.trim().slice(0, 10);
+  if (!fechaLimpia || fechaLimpia.length < 10) return false;
+  const hoy = obtenerFechaHoy();
+  return fechaLimpia < hoy;
+}
+
 export function asegurarReglaUribia(sesiones: (Session | any)[]): void {
   const { valido, conflictos } = validarReglaUribia(sesiones);
   if (!valido) {

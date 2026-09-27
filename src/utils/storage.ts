@@ -4,7 +4,7 @@ import { USER_LOADED_SESSIONS } from '../data/userLoadedSessions';
 import { exportToExcelFile } from './excelExport';
 
 const STORAGE_KEYS = {
-  SESSIONS: 'biz_cronograma_sessions_v10_uribia_clean',
+  SESSIONS: 'biz_cronograma_sessions_v11_332_clean',
   INSTITUTIONS: 'biz_cronograma_institutions_v4',
   BRANDING: 'biz_cronograma_branding_v3',
   SNAPSHOTS: 'biz_cronograma_snapshots_v1',

@@ -15,8 +15,7 @@ import {
   getDayOfWeekSpanish, 
   calculateDuration, 
   formatScheduledMonths,
-  cleanHourForId,
-  isObsoleteUribiaSession
+  cleanHourForId
 } from '../utils/scheduleGenerator';
 
 export { getDayOfWeekSpanish, calculateDuration, formatScheduledMonths };
@@ -68,12 +67,12 @@ export const expandToIndividualSessions = (sessions: TrainingSession[]): Trainin
   let itemCounter = 1;
 
   sessions.forEach(s => {
-    // Excluir cualquier sesión docente o fecha obsoleta de rotación previa
+    // Excluir cualquier sesión docente
     const isDocente = 
       (s.targetAudience || '').toLowerCase().includes('docente') ||
       (s.targetPopulation || '').toLowerCase().includes('docente') ||
       (s.trainingType || '').toLowerCase().includes('docente');
-    if (isDocente || isObsoleteUribiaSession(s)) return;
+    if (isDocente) return;
 
     const dates = (s.specificDates && s.specificDates.length > 0)
       ? s.specificDates
