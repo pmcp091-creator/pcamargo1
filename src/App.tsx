@@ -957,15 +957,17 @@ export default function App() {
       <style>{`
         @page {
           size: auto;
-          margin: 5mm 6mm !important;
+          margin: 4mm 6mm !important;
         }
         @media print {
-          html, body, #root {
+          html, body, #root, main, .min-h-screen {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
             color: #000000 !important;
-            margin: 0 !important;
-            padding: 0 !important;
             box-shadow: none !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -990,12 +992,14 @@ export default function App() {
           #printable-agenda, #printable-official-document, .print-sheet {
             display: flex !important;
             flex-direction: column !important;
-            justify-content: space-between !important;
             height: auto !important;
-            min-height: calc(100vh - 12mm) !important;
-            max-height: 100% !important;
-            padding: 0 !important;
+            max-height: 98% !important;
             margin: 0 !important;
+            margin-top: 0 !important;
+            padding: 0 !important;
+            padding-top: 0 !important;
+            position: relative !important;
+            top: 0 !important;
             box-sizing: border-box !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
@@ -1012,6 +1016,9 @@ export default function App() {
             display: block !important;
             visibility: visible !important;
             background: #ffffff !important;
+            margin-top: 0 !important;
+            padding-top: 2px !important;
+            margin-bottom: 6px !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
@@ -1020,11 +1027,14 @@ export default function App() {
             visibility: visible !important;
             background: #ffffff !important;
             margin-top: auto !important;
-            padding-top: 8px !important;
+            padding-top: 6px !important;
             page-break-before: avoid !important;
             break-before: avoid !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+          }
+          .print-footer img {
+            max-height: 22px !important;
           }
           ${!printSections.header ? '.print-header { display: none !important; }' : ''}
           ${!printSections.dashboardKpis ? '.print-kpis { display: none !important; }' : ''}

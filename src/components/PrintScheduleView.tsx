@@ -251,20 +251,22 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 print:bg-white text-slate-800 dark:text-slate-100 font-sans">
+    <div className="min-h-screen bg-slate-100 dark:bg-slate-950 print:bg-white text-slate-800 dark:text-slate-100 font-sans print:m-0 print:p-0">
       {/* Estilos CSS específicos de impresión: sin saltos forzados de página y protección de corte de filas */}
       <style>{`
         @page {
           size: auto;
-          margin: 5mm 6mm !important;
+          margin: 4mm 6mm !important;
         }
         @media print {
-          html, body, #root {
+          html, body, #root, main, .min-h-screen {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
             color: #000000 !important;
-            margin: 0 !important;
-            padding: 0 !important;
             box-shadow: none !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
@@ -289,12 +291,14 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           #printable-agenda, #printable-official-document, .print-sheet {
             display: flex !important;
             flex-direction: column !important;
-            justify-content: space-between !important;
             height: auto !important;
-            min-height: calc(100vh - 12mm) !important;
-            max-height: 100% !important;
-            padding: 0 !important;
+            max-height: 98% !important;
             margin: 0 !important;
+            margin-top: 0 !important;
+            padding: 0 !important;
+            padding-top: 0 !important;
+            position: relative !important;
+            top: 0 !important;
             box-sizing: border-box !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
@@ -311,6 +315,9 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             display: block !important;
             visibility: visible !important;
             background: #ffffff !important;
+            margin-top: 0 !important;
+            padding-top: 2px !important;
+            margin-bottom: 6px !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
@@ -319,11 +326,14 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             visibility: visible !important;
             background: #ffffff !important;
             margin-top: auto !important;
-            padding-top: 8px !important;
+            padding-top: 6px !important;
             page-break-before: avoid !important;
             break-before: avoid !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+          }
+          .print-footer img {
+            max-height: 22px !important;
           }
           table {
             border-collapse: collapse !important;
@@ -438,23 +448,23 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
         {/* 2. BLOQUE ULTRA-COMPACTO DE RESUMEN (TOTAL, PRESENCIALES, VIRTUALES, PERIODO) */}
         {/* ========================================================================= */}
         {sectionsConfig.dashboardKpis && (
-          <div className="grid grid-cols-4 gap-1 mb-1.5 print:mb-1 p-1 print:p-0.5 bg-slate-50 border border-slate-300 rounded text-center print-kpis">
-            <div className="border-r border-slate-200 pr-1">
+          <div className="grid grid-cols-4 gap-1 my-1 p-1 bg-slate-50 border border-slate-300 rounded text-center print-kpis">
+            <div className="border-r border-slate-200 py-1 px-2">
               <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-slate-500 block">Total Sesiones</span>
-              <span className="text-xs sm:text-sm print:text-[11px] font-black text-slate-900 block leading-tight">{kpis.total}</span>
+              <span className="text-xs sm:text-sm print:text-xs font-black text-slate-900 block leading-tight">{kpis.total}</span>
               <span className="text-[7px] text-slate-500 block">Programadas</span>
             </div>
-            <div className="border-r border-slate-200 px-1">
+            <div className="border-r border-slate-200 py-1 px-2">
               <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-emerald-700 block">Presenciales</span>
-              <span className="text-xs sm:text-sm print:text-[11px] font-black text-emerald-800 block leading-tight">{kpis.presencial}</span>
+              <span className="text-xs sm:text-sm print:text-xs font-black text-emerald-800 block leading-tight">{kpis.presencial}</span>
               <span className="text-[7px] text-emerald-600 block">Aula Territorial</span>
             </div>
-            <div className="border-r border-slate-200 px-1">
+            <div className="border-r border-slate-200 py-1 px-2">
               <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-sky-700 block">Virtuales</span>
-              <span className="text-xs sm:text-sm print:text-[11px] font-black text-sky-800 block leading-tight">{kpis.virtual}</span>
+              <span className="text-xs sm:text-sm print:text-xs font-black text-sky-800 block leading-tight">{kpis.virtual}</span>
               <span className="text-[7px] text-sky-600 block">Conexión Sincrónica</span>
             </div>
-            <div className="pl-1">
+            <div className="py-1 px-2">
               <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-amber-700 block">Periodo</span>
               <span className="text-[10px] print:text-[8.5px] font-black text-amber-900 block truncate leading-tight" title={effectivePeriod}>
                 {effectivePeriod}
@@ -563,11 +573,11 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                                     </div>
                                   )}
                                   {isDocente ? (
-                                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-slate-200 text-slate-800 border border-slate-300">
+                                    <span className="inline-block mt-0.5 py-0.5 px-1.5 text-[9px] font-bold rounded bg-slate-200 text-slate-800 border border-slate-300">
                                       Población: Formación Docente
                                     </span>
                                   ) : (
-                                    <span className="inline-block mt-1 px-2 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-900 border border-blue-200 font-semibold">
+                                    <span className="inline-block mt-0.5 py-0.5 px-1.5 text-[9px] font-bold rounded bg-blue-100 text-blue-900 border border-blue-200 font-semibold">
                                       {detectedGrade ? `Grado / Grupo: ${detectedGrade.replace(/grado\s*/i, '')}` : 'Audiencia: Estudiantes'}
                                     </span>
                                   )}
@@ -581,7 +591,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                                   </div>
                                 </td>
                                 <td className="py-1 px-1 border-r border-slate-200 text-center whitespace-nowrap">
-                                  <span className={`inline-block px-1 py-0.2 rounded text-[8px] font-bold ${
+                                  <span className={`inline-block py-0.5 px-1.5 rounded text-[9px] font-bold ${
                                     session.modality === 'Presencial'
                                       ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
                                       : 'bg-sky-100 text-sky-900 border border-sky-300'
@@ -590,7 +600,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                                   </span>
                                 </td>
                                 <td className="py-1 px-1 border-r border-slate-200 text-center whitespace-nowrap">
-                                  <span className={`inline-block px-1 py-0.2 rounded text-[8px] font-extrabold ${
+                                  <span className={`inline-block py-0.5 px-1.5 rounded text-[9px] font-extrabold ${
                                     isApproved
                                       ? 'bg-emerald-50 text-emerald-800 border border-emerald-400'
                                       : 'bg-amber-50 text-amber-800 border border-amber-400'

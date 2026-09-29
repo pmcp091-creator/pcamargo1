@@ -1,4 +1,4 @@
-const CACHE_NAME = 'legado-print-nofit2-v4';
+const CACHE_NAME = 'legado-print-top0-v5';
 
 self.addEventListener('install', () => self.skipWaiting());
 
