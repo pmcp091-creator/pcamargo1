@@ -85,15 +85,17 @@
 /* ========================================================================= */
 @page {
   size: auto;
-  margin: 4mm 6mm !important;
+  margin: 5mm 7mm !important;
 }
 
 @media print {
-  html, body, #root, main, .min-h-screen {
-    margin-top: 0 !important;
-    padding-top: 0 !important;
+  html, body, #root, #root > div, main, .min-h-screen {
+    height: 100% !important;
+    min-height: 100% !important;
     margin: 0 !important;
+    margin-top: 0 !important;
     padding: 0 !important;
+    padding-top: 0 !important;
     background: #ffffff !important;
     background-color: #ffffff !important;
     color: #000000 !important;
@@ -128,15 +130,12 @@
   #printable-agenda, #printable-official-document, .print-sheet {
     display: flex !important;
     flex-direction: column !important;
-    height: auto !important;
-    max-height: 98% !important;
-    margin: 0 !important;
-    margin-top: 0 !important;
-    padding: 0 !important;
-    padding-top: 0 !important;
-    position: relative !important;
-    top: 0 !important;
+    justify-content: space-between !important;
+    min-height: 100% !important;
+    height: 100% !important;
     box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
     width: 100% !important;
@@ -160,12 +159,27 @@
     break-inside: avoid !important;
   }
 
-  .print-footer, #printable-agenda footer, #printable-agenda > div:last-child, footer.print-footer, .pdf-footer-root {
+  /* El bloque central absorbe el espacio sobrante */
+  #printable-agenda > table,
+  #printable-agenda > .table-container,
+  #printable-agenda > .print-content-body,
+  #printable-agenda > div:nth-child(2),
+  #printable-agenda > div:nth-child(3) {
+    flex-grow: 1 !important;
+  }
+
+  /* El pie de página se clava al límite inferior del papel */
+  .print-footer, 
+  #printable-agenda footer, 
+  #printable-agenda > div:last-child,
+  footer.print-footer,
+  .pdf-footer-root {
+    margin-top: auto !important;
+    padding-top: 8px !important;
+    width: 100% !important;
     display: block !important;
     visibility: visible !important;
     background: #ffffff !important;
-    margin-top: auto !important;
-    padding-top: 6px !important;
     page-break-before: avoid !important;
     break-before: avoid !important;
     page-break-inside: avoid !important;

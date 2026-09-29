@@ -256,14 +256,16 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
       <style>{`
         @page {
           size: auto;
-          margin: 4mm 6mm !important;
+          margin: 5mm 7mm !important;
         }
         @media print {
-          html, body, #root, main, .min-h-screen {
-            margin-top: 0 !important;
-            padding-top: 0 !important;
+          html, body, #root, #root > div, main, .min-h-screen {
+            height: 100% !important;
+            min-height: 100% !important;
             margin: 0 !important;
+            margin-top: 0 !important;
             padding: 0 !important;
+            padding-top: 0 !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
             color: #000000 !important;
@@ -291,15 +293,12 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           #printable-agenda, #printable-official-document, .print-sheet {
             display: flex !important;
             flex-direction: column !important;
-            height: auto !important;
-            max-height: 98% !important;
-            margin: 0 !important;
-            margin-top: 0 !important;
-            padding: 0 !important;
-            padding-top: 0 !important;
-            position: relative !important;
-            top: 0 !important;
+            justify-content: space-between !important;
+            min-height: 100% !important;
+            height: 100% !important;
             box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
             width: 100% !important;
@@ -321,12 +320,26 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
-          .print-footer, #printable-agenda footer, #printable-agenda > div:last-child, footer.print-footer, .pdf-footer-root {
+          /* El bloque central absorbe el espacio sobrante */
+          #printable-agenda > table,
+          #printable-agenda > .table-container,
+          #printable-agenda > .print-content-body,
+          #printable-agenda > div:nth-child(2),
+          #printable-agenda > div:nth-child(3) {
+            flex-grow: 1 !important;
+          }
+          /* El pie de página se clava al límite inferior del papel */
+          .print-footer, 
+          #printable-agenda footer, 
+          #printable-agenda > div:last-child,
+          footer.print-footer,
+          .pdf-footer-root {
+            margin-top: auto !important;
+            padding-top: 8px !important;
+            width: 100% !important;
             display: block !important;
             visibility: visible !important;
             background: #ffffff !important;
-            margin-top: auto !important;
-            padding-top: 6px !important;
             page-break-before: avoid !important;
             break-before: avoid !important;
             page-break-inside: avoid !important;
@@ -428,7 +441,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
       </div>
 
       {/* Contenedor Imprimible Oficial Unificado mediante PdfLayout Global */}
-      <div className="w-full max-w-full overflow-x-auto overflow-y-visible touch-auto [-webkit-overflow-scrolling:touch] p-2 print:p-0 print:overflow-visible">
+      <div className="w-full max-w-full overflow-x-auto overflow-y-visible touch-auto [-webkit-overflow-scrolling:touch] p-2 print:p-0 print:m-0 print:h-full print:min-h-full print:overflow-visible">
         <PdfLayout
           id="printable-agenda"
         showHeader={sectionsConfig.header}

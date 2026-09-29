@@ -32,16 +32,17 @@ export const PdfLayout: React.FC<PdfLayoutProps> = ({
   return (
     <div
       id={id || 'printable-agenda'}
-      className={`pdf-layout-root print-sheet bg-white text-slate-900 w-full min-w-[760px] md:min-w-0 max-w-[1280px] mx-auto p-4 sm:p-6 print:p-0 print:m-0 print:max-w-none print:min-w-0 print:w-full flex flex-col justify-between print:h-auto print:max-h-[98%] box-border ${className}`}
+      className={`pdf-layout-root print-sheet bg-white text-slate-900 w-full min-w-[760px] md:min-w-0 max-w-[1280px] mx-auto p-4 sm:p-6 print:p-0 print:m-0 print:max-w-none print:min-w-0 print:w-full flex flex-col justify-between print:h-full print:min-h-full min-h-full box-border ${className}`}
       style={{
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
+        minHeight: '100%',
         boxSizing: 'border-box',
       }}
     >
       {showHeader && <PdfHeader {...headerProps} />}
-      <div className="flex-1 w-full print-content-body flex flex-col">
+      <div className="flex-1 w-full print-content-body flex flex-col grow">
         {children}
       </div>
       {showFooter && <PdfFooter {...footerProps} />}
