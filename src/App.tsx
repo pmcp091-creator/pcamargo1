@@ -951,7 +951,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-[100dvh] overflow-x-hidden bg-slate-100/70 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased transition-colors duration-200">
+    <div className="min-h-screen bg-slate-100/70 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased transition-colors duration-200">
       {/* Estilos CSS Dinámicos para Imprenta */}
       <style>{`
         @page {
@@ -983,9 +983,9 @@ export default function App() {
         </div>
       )}
 
-      {/* Banner Superior de Estado solo para el Coordinador en modo Admin (Visible en Desktop) */}
+      {/* Banner Superior de Estado solo para el Coordinador en modo Admin */}
       {sessionRole === 'admin' && (
-        <div className="hidden md:flex justify-between items-center bg-slate-900 text-slate-300 px-4 py-1.5 text-xs border-b border-slate-800 no-print">
+        <div className="bg-slate-900 text-slate-300 px-4 py-1.5 text-xs flex justify-between items-center border-b border-slate-800 no-print">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
             <span>
@@ -1053,7 +1053,6 @@ export default function App() {
           setShowAdminLoginModal(true);
         }}
         onLogoutAdmin={handleLogout}
-        onResetMatrix={() => setIsResetModalOpen(true)}
         restrictedInstName={restrictedInstName}
         institutionProfile={currentInstProfile}
         isInstitutionalKiosk={isInstitutionalKiosk}
@@ -1062,8 +1061,24 @@ export default function App() {
         firebaseSyncStatus={firebaseSyncStatus}
       />
 
+      {/* Pestaña Accesible para Dashboard (Solo para administradores o vista universal) */}
+      {!isInstitutionalKiosk && (
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-3 no-print flex gap-2">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+              activeTab === 'dashboard' 
+                ? 'bg-amber-400 text-slate-950 shadow-xs' 
+                : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" /> 📊 Dashboard Ejecutivo
+          </button>
+        </div>
+      )}
+
       {/* Área de Contenido */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-20 md:pb-4 space-y-4">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 space-y-4">
         {isInstitutionalKiosk ? (
           isPrintView ? (
             <PrintView

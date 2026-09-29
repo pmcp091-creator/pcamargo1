@@ -1,4 +1,4 @@
-const CACHE_NAME = 'legado-cache-mobile-v1';
+const CACHE_NAME = 'vocacion-app-v5';
 const ASSETS = [
   '/',
   '/index.html',
@@ -12,9 +12,8 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (e) => {
-  self.skipWaiting();
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)).then(() => self.skipWaiting())
   );
 });
 
@@ -26,14 +25,8 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-self.addEventListener('message', (e) => {
-  if (e.data && e.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
-
 self.addEventListener('fetch', (e) => {
-  // Estrategia: responder con red primero si está online, o responder con caché si no hay red
+  // Estrategia: responder con caché si existe; si no, buscar en la red y guardar copia
   e.respondWith(
     caches.match(e.request).then((cachedResponse) => {
       if (cachedResponse) return cachedResponse;
