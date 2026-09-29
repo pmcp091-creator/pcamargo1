@@ -1,4 +1,4 @@
-const CACHE_NAME = 'legado-matriz-touch-v1';
+const CACHE_NAME = 'legado-print-flex-v3';
 
 self.addEventListener('install', () => self.skipWaiting());
 

@@ -254,19 +254,66 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 print:bg-white text-slate-800 dark:text-slate-100 font-sans">
       {/* Estilos CSS específicos de impresión: sin saltos forzados de página y protección de corte de filas */}
       <style>{`
+        @page {
+          ${paperOrientation === 'landscape' ? 'size: letter landscape; margin: 6mm 8mm;' : 'size: auto; margin: 8mm 10mm;'}
+        }
         @media print {
-          @page {
-            margin: 8mm;
-            size: ${paperOrientation === 'portrait' ? 'portrait' : 'landscape'};
-          }
-          body {
-            background: white !important;
-            color: #0f172a !important;
+          html, body, #root {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          .print\\:hidden {
+          nav, header:not(.print-header), footer:not(.print-footer), 
+          .no-print, [role="dialog"] > div:first-child, .fixed.inset-0.bg-black\/80,
+          .fixed.inset-0.bg-slate-950\/70, .fixed.inset-0.bg-black\/60,
+          #fab-calendar-new-session, .mobile-bottom-nav, button {
             display: none !important;
+          }
+          * {
+            color-scheme: light !important;
+          }
+          body * {
+            visibility: hidden;
+          }
+          #printable-agenda, #printable-agenda *,
+          #printable-official-document, #printable-official-document *,
+          .print-sheet, .print-sheet * {
+            visibility: visible;
+          }
+          #printable-agenda, #printable-official-document, .print-sheet {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            min-height: 96vh !important;
+            box-sizing: border-box !important;
+            width: 100% !important;
+            min-width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          .print-header {
+            display: block !important;
+            visibility: visible !important;
+            background: #ffffff !important;
+          }
+          .print-footer, footer.print-footer, .pdf-footer-root {
+            display: block !important;
+            visibility: visible !important;
+            background: #ffffff !important;
+            margin-top: auto !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
           }
           table {
             border-collapse: collapse !important;
@@ -371,7 +418,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
       {/* Contenedor Imprimible Oficial Unificado mediante PdfLayout Global */}
       <div className="w-full max-w-full overflow-x-auto overflow-y-visible touch-auto [-webkit-overflow-scrolling:touch] p-2 print:p-0 print:overflow-visible">
         <PdfLayout
-          id="printable-official-document"
+          id="printable-agenda"
         showHeader={sectionsConfig.header}
         showFooter={sectionsConfig.footer}
         headerProps={{

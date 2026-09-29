@@ -47,7 +47,7 @@ export interface CalendarViewProps {
   onExportExcel?: () => void;
   onExportCSV?: () => void;
   onExportHTML?: () => void;
-  onPrint?: (targetSessions?: TrainingSession[], title?: string, periodLabel?: string) => void;
+  onPrint?: (targetSessions?: TrainingSession[], title?: string, periodLabel?: string, orientation?: 'portrait' | 'landscape') => void;
   sessionRole?: 'admin' | 'viewer';
 }
 
@@ -414,7 +414,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       onPrint(
         currentDaySessions,
         `AGENDA DIARIA — ${selectedDateFormatted.toUpperCase()}`,
-        `Día: ${selectedDateFormatted}`
+        `Día: ${selectedDateFormatted}`,
+        'portrait'
       );
     }
   };
@@ -425,7 +426,8 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       onPrint(
         currentWeekSessions,
         `AGENDA SEMANAL — ${weekRangeLabel.toUpperCase()}`,
-        `Semana: ${weekRangeLabel}`
+        `Semana: ${weekRangeLabel}`,
+        'landscape'
       );
     }
   };

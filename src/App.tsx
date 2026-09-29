@@ -956,23 +956,71 @@ export default function App() {
       {/* Estilos CSS Dinámicos para Imprenta */}
       <style>{`
         @page {
-          size: ${paperFormat === 'letter' ? '215.9mm 279.4mm' : '215.9mm 330.2mm'} ${paperOrientation};
-          margin: 15mm;
+          ${paperOrientation === 'landscape' ? 'size: letter landscape; margin: 6mm 8mm;' : 'size: auto; margin: 8mm 10mm;'}
         }
         @media print {
-          nav, header, footer, .no-print, button { display: none !important; }
-          html, body, #root, .min-h-screen { 
-            background: white !important; 
-            color: black !important; 
+          html, body, #root {
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-shadow: none !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          nav, header:not(.print-header), footer:not(.print-footer), 
+          .no-print, [role="dialog"] > div:first-child, .fixed.inset-0.bg-black\/80,
+          .fixed.inset-0.bg-slate-950\/70, .fixed.inset-0.bg-black\/60,
+          #fab-calendar-new-session, .mobile-bottom-nav, button {
+            display: none !important;
           }
           * {
             color-scheme: light !important;
           }
-          .print-clean { border: 1px solid #ccc !important; box-shadow: none !important; }
+          body * {
+            visibility: hidden;
+          }
+          #printable-agenda, #printable-agenda *,
+          #printable-official-document, #printable-official-document *,
+          .print-sheet, .print-sheet * {
+            visibility: visible;
+          }
+          #printable-agenda, #printable-official-document, .print-sheet {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            min-height: 96vh !important;
+            box-sizing: border-box !important;
+            width: 100% !important;
+            min-width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+          .print-header {
+            display: block !important;
+            visibility: visible !important;
+            background: #ffffff !important;
+          }
+          .print-footer, footer.print-footer, .pdf-footer-root {
+            display: block !important;
+            visibility: visible !important;
+            background: #ffffff !important;
+            margin-top: auto !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
           ${!printSections.header ? '.print-header { display: none !important; }' : ''}
           ${!printSections.dashboardKpis ? '.print-kpis { display: none !important; }' : ''}
           ${!printSections.territorialCharts ? '.print-charts { display: none !important; }' : ''}
           ${!printSections.scheduleGrid ? '.print-schedule { display: none !important; }' : ''}
+          ${!printSections.signatures ? '.print-signatures { display: none !important; }' : ''}
         }
       `}</style>
 
@@ -1195,8 +1243,9 @@ export default function App() {
                 onExportExcel={() => handleExportExcel()}
                 onExportCSV={() => exportToCSV(filteredSessions, restrictedInstName || (selectedInstitution !== 'all' ? selectedInstitution : null))}
                 onExportHTML={() => exportToHTML(filteredSessions, branding)}
-                onPrint={(targetSessions, title, period) => {
+                onPrint={(targetSessions, title, period, orientation) => {
                   if (targetSessions) {
+                    if (orientation) setPaperOrientation(orientation);
                     setPrintCustomSessions(targetSessions);
                     setPrintCustomTitle(title || null);
                     setPrintPeriodLabel(period || null);

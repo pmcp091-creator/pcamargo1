@@ -28,26 +28,27 @@ export const PdfHeader: React.FC<PdfHeaderProps> = ({
   });
 
   return (
-    <header className="pdf-header-root border-b-2 border-slate-900 pb-2 mb-2.5 print:pb-1.5 print:mb-2 bg-white">
-      <div className="flex items-center justify-between w-full gap-3">
+    <header className="pdf-header-root print-header border-b-2 border-slate-900 pb-2 mb-2.5 print:pb-1.5 print:mb-2 bg-white print:bg-white print:block">
+      <div className="flex print:flex items-center justify-between w-full gap-3">
         {/* Columna Izquierda: Logo LEGADO Oficial (Mínimo 60px de alto, sin opacidad reducida, alto contraste) */}
-        <div className="w-52 sm:w-60 print:w-56 shrink-0 flex items-center justify-start py-0.5">
+        <div className="w-52 sm:w-60 print:w-56 shrink-0 flex print:flex items-center justify-start py-0.5">
           <img
             src="/logos/legado.png"
             alt="Legado para los Territorios"
-            className="h-[64px] min-h-[60px] print:h-[62px] print:min-h-[60px] w-auto object-contain block"
+            className="h-[64px] min-h-[60px] print:h-[62px] print:min-h-[60px] w-auto object-contain block print:block"
             style={{
               height: '64px',
               minHeight: '60px',
               opacity: 1,
               filter: 'none',
               transform: 'none',
+              visibility: 'visible',
             }}
           />
         </div>
 
         {/* Columna Central: Jerarquía Institucional y Metadatos de Concertación */}
-        <div className="flex-1 text-center min-w-0 px-2">
+        <div className="flex-1 text-center min-w-0 px-2 print:block">
           <p className="text-[8.5px] print:text-[8px] font-extrabold tracking-wider uppercase text-slate-700 leading-tight">
             ALIANZA: GRUPO ENERGÍA BOGOTÁ • ACDI/VOCA • FUNDACIÓN PROMIGAS • ENLAZA • THE BIZ NATION
           </p>
@@ -72,7 +73,7 @@ export const PdfHeader: React.FC<PdfHeaderProps> = ({
 
         {/* Columna Derecha: Sello Oficial de Concertación Técnica */}
         {showSeal && (
-          <div className="w-28 sm:w-36 print:w-32 shrink-0 flex flex-col items-end justify-center text-right">
+          <div className="w-28 sm:w-36 print:w-32 shrink-0 flex print:flex flex-col items-end justify-center text-right">
             <span className="inline-flex items-center gap-1 text-[8.5px] print:text-[8px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded shadow-2xs">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               Concertado 2026

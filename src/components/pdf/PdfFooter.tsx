@@ -10,51 +10,58 @@ export const PdfFooter: React.FC<PdfFooterProps> = ({
   hideLegend = false,
 }) => {
   return (
-    <footer className="pdf-footer-root mt-3 pt-2 print:mt-1.5 print:pt-1.5 border-t border-slate-300 bg-white w-full">
+    <footer 
+      className="pdf-footer-root print-footer mt-auto pt-2 print:mt-auto print:pt-1.5 border-t border-slate-300 bg-white print:bg-white w-full print:block"
+      style={{
+        marginTop: 'auto',
+        breakInside: 'avoid',
+        pageBreakInside: 'avoid',
+      }}
+    >
       {/* Fila fija con los 5 logos de aliados alineados horizontalmente y centrados (mínimo 30px de alto cada uno) */}
-      <div className="flex items-center justify-between sm:justify-around px-2 sm:px-6 py-1 gap-3 sm:gap-6 flex-nowrap w-full">
-        <div className="flex items-center justify-center shrink-0">
+      <div className="flex print:flex items-center justify-between sm:justify-around px-2 sm:px-6 py-1 gap-3 sm:gap-6 flex-nowrap w-full bg-white print:bg-white">
+        <div className="flex print:flex items-center justify-center shrink-0">
           <img
             src="/logos/grupo_energia_bogota.png"
             alt="Grupo Energía Bogotá"
-            className="h-[34px] min-h-[30px] print:h-[32px] print:min-h-[30px] w-auto max-w-[130px] object-contain block"
-            style={{ height: '34px', minHeight: '30px', opacity: 1, filter: 'none' }}
+            className="h-[34px] min-h-[30px] print:h-[32px] print:min-h-[30px] w-auto max-w-[130px] object-contain block print:block"
+            style={{ height: '34px', minHeight: '30px', opacity: 1, filter: 'none', visibility: 'visible' }}
           />
         </div>
 
-        <div className="flex items-center justify-center shrink-0">
+        <div className="flex print:flex items-center justify-center shrink-0">
           <img
             src="/logos/acdi.png"
             alt="ACDI/VOCA"
-            className="h-[32px] min-h-[30px] print:h-[30px] print:min-h-[30px] w-auto max-w-[120px] object-contain block"
-            style={{ height: '32px', minHeight: '30px', opacity: 1, filter: 'none' }}
+            className="h-[32px] min-h-[30px] print:h-[30px] print:min-h-[30px] w-auto max-w-[120px] object-contain block print:block"
+            style={{ height: '32px', minHeight: '30px', opacity: 1, filter: 'none', visibility: 'visible' }}
           />
         </div>
 
-        <div className="flex items-center justify-center shrink-0">
+        <div className="flex print:flex items-center justify-center shrink-0">
           <img
             src="/logos/promigas.png"
             alt="Fundación Promigas"
-            className="h-[32px] min-h-[30px] print:h-[30px] print:min-h-[30px] w-auto max-w-[120px] object-contain block"
-            style={{ height: '32px', minHeight: '30px', opacity: 1, filter: 'none' }}
+            className="h-[32px] min-h-[30px] print:h-[30px] print:min-h-[30px] w-auto max-w-[120px] object-contain block print:block"
+            style={{ height: '32px', minHeight: '30px', opacity: 1, filter: 'none', visibility: 'visible' }}
           />
         </div>
 
-        <div className="flex items-center justify-center shrink-0">
+        <div className="flex print:flex items-center justify-center shrink-0">
           <img
             src="/logos/enlaza.png"
             alt="Enlaza"
-            className="h-[32px] min-h-[30px] print:h-[30px] print:min-h-[30px] w-auto max-w-[120px] object-contain block"
-            style={{ height: '32px', minHeight: '30px', opacity: 1, filter: 'none' }}
+            className="h-[32px] min-h-[30px] print:h-[30px] print:min-h-[30px] w-auto max-w-[120px] object-contain block print:block"
+            style={{ height: '32px', minHeight: '30px', opacity: 1, filter: 'none', visibility: 'visible' }}
           />
         </div>
 
-        <div className="flex items-center justify-center shrink-0">
+        <div className="flex print:flex items-center justify-center shrink-0">
           <img
             src="/logos/biz_nation.png"
             alt="The Biz Nation"
-            className="h-[32px] min-h-[30px] print:h-[30px] print:min-h-[30px] w-auto max-w-[110px] object-contain block"
-            style={{ height: '32px', minHeight: '30px', opacity: 1, filter: 'none' }}
+            className="h-[32px] min-h-[30px] print:h-[30px] print:min-h-[30px] w-auto max-w-[110px] object-contain block print:block"
+            style={{ height: '32px', minHeight: '30px', opacity: 1, filter: 'none', visibility: 'visible' }}
           />
         </div>
       </div>
