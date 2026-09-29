@@ -190,9 +190,33 @@
     max-height: 22px !important;
   }
 
+  /* Distribución de columnas y ajuste fluido de Observaciones */
+  #printable-agenda th:nth-child(1), #printable-agenda td:nth-child(1) { width: 4% !important; max-width: 4% !important; }
+  #printable-agenda th:nth-child(2), #printable-agenda td:nth-child(2) { width: 10% !important; max-width: 10% !important; }
+  #printable-agenda th:nth-child(3), #printable-agenda td:nth-child(3) { width: 11% !important; max-width: 11% !important; }
+  #printable-agenda th:nth-child(4), #printable-agenda td:nth-child(4) { width: 8% !important; max-width: 8% !important; }
+  #printable-agenda th:nth-child(5), #printable-agenda td:nth-child(5) { width: 21% !important; max-width: 21% !important; }
+  #printable-agenda th:nth-child(6), #printable-agenda td:nth-child(6) { width: 13% !important; max-width: 13% !important; }
+  #printable-agenda th:nth-child(7), #printable-agenda td:nth-child(7) { width: 9% !important; max-width: 9% !important; }
+  #printable-agenda th:nth-child(8), #printable-agenda td:nth-child(8) { width: 8% !important; max-width: 8% !important; }
+  #printable-agenda th:nth-child(9), #printable-agenda td:nth-child(9) { width: 26% !important; max-width: 26% !important; }
+
+  td.col-observaciones, 
+  #printable-agenda td:last-child,
+  #printable-agenda td:last-child * {
+    white-space: normal !important;
+    word-break: normal !important;
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
   table {
     border-collapse: collapse !important;
     width: 100% !important;
+    table-layout: fixed !important;
   }
   thead {
     display: table-header-group !important;

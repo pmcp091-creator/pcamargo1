@@ -348,9 +348,33 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           .print-footer img {
             max-height: 22px !important;
           }
+          /* Distribución de columnas y ajuste fluido de Observaciones */
+          #printable-agenda th:nth-child(1), #printable-agenda td:nth-child(1) { width: 4% !important; max-width: 4% !important; }
+          #printable-agenda th:nth-child(2), #printable-agenda td:nth-child(2) { width: 10% !important; max-width: 10% !important; }
+          #printable-agenda th:nth-child(3), #printable-agenda td:nth-child(3) { width: 11% !important; max-width: 11% !important; }
+          #printable-agenda th:nth-child(4), #printable-agenda td:nth-child(4) { width: 8% !important; max-width: 8% !important; }
+          #printable-agenda th:nth-child(5), #printable-agenda td:nth-child(5) { width: 21% !important; max-width: 21% !important; }
+          #printable-agenda th:nth-child(6), #printable-agenda td:nth-child(6) { width: 13% !important; max-width: 13% !important; }
+          #printable-agenda th:nth-child(7), #printable-agenda td:nth-child(7) { width: 9% !important; max-width: 9% !important; }
+          #printable-agenda th:nth-child(8), #printable-agenda td:nth-child(8) { width: 8% !important; max-width: 8% !important; }
+          #printable-agenda th:nth-child(9), #printable-agenda td:nth-child(9) { width: 26% !important; max-width: 26% !important; }
+
+          td.col-observaciones, 
+          #printable-agenda td:last-child,
+          #printable-agenda td:last-child * {
+            white-space: normal !important;
+            word-break: normal !important;
+            overflow-wrap: break-word !important;
+            word-wrap: break-word !important;
+            overflow: visible !important;
+            max-height: none !important;
+            height: auto !important;
+          }
+
           table {
             border-collapse: collapse !important;
             width: 100% !important;
+            table-layout: fixed !important;
           }
           thead {
             display: table-header-group !important;
@@ -501,15 +525,15 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                 <table className="w-full text-left text-[9px] print:text-[8px] border-collapse">
                   <thead>
                     <tr className="bg-slate-900 text-white font-bold border-b border-slate-400">
-                      <th className="py-1 px-1 text-center w-7 border-r border-slate-700">#</th>
-                      <th className="py-1 px-1.5 w-22 border-r border-slate-700">Fecha / Día</th>
-                      <th className="py-1 px-1.5 w-22 border-r border-slate-700">Horario</th>
-                      <th className="py-1 px-1.5 w-16 border-r border-slate-700">Municipio</th>
-                      <th className="py-1 px-1.5 min-w-[130px] border-r border-slate-700">Institución / Sede</th>
-                      <th className="py-1 px-1.5 min-w-[120px] border-r border-slate-700">Formación / Audiencia</th>
-                      <th className="py-1 px-1 text-center w-18 border-r border-slate-700">Modalidad</th>
-                      <th className="py-1 px-1 text-center w-18 border-r border-slate-700">Estado</th>
-                      <th className="py-1 px-1.5 min-w-[120px]">Observaciones y Responsable</th>
+                      <th className="col-num py-1 px-1 text-center w-[4%] border-r border-slate-700">#</th>
+                      <th className="col-fecha py-1 px-1.5 w-[10%] border-r border-slate-700">Fecha / Día</th>
+                      <th className="col-horario py-1 px-1.5 w-[11%] border-r border-slate-700">Horario</th>
+                      <th className="col-municipio py-1 px-1.5 w-[8%] border-r border-slate-700">Municipio</th>
+                      <th className="col-institucion py-1 px-1.5 w-[21%] border-r border-slate-700">Institución / Sede</th>
+                      <th className="col-formacion py-1 px-1.5 w-[13%] border-r border-slate-700">Formación / Audiencia</th>
+                      <th className="col-modalidad py-1 px-1 text-center w-[9%] border-r border-slate-700">Modalidad</th>
+                      <th className="col-estado py-1 px-1 text-center w-[8%] border-r border-slate-700">Estado</th>
+                      <th className="col-observaciones py-1 px-1.5 w-[26%]">Observaciones y Responsable</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
@@ -603,8 +627,8 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                                     Audiencia: <strong className="text-slate-700">{session.targetAudience}</strong>
                                   </div>
                                 </td>
-                                <td className="py-1 px-1 border-r border-slate-200 text-center whitespace-nowrap">
-                                  <span className={`inline-block py-0.5 px-1.5 rounded text-[9px] font-bold ${
+                                <td className="col-modalidad py-1 px-1 border-r border-slate-200 text-center whitespace-nowrap">
+                                  <span className={`inline-block py-0.5 px-1 rounded text-[8.5px] font-bold ${
                                     session.modality === 'Presencial'
                                       ? 'bg-emerald-100 text-emerald-900 border border-emerald-300'
                                       : 'bg-sky-100 text-sky-900 border border-sky-300'
@@ -612,8 +636,8 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                                     {session.modality === 'Presencial' ? '🏛️ Presencial' : '💻 Virtual'}
                                   </span>
                                 </td>
-                                <td className="py-1 px-1 border-r border-slate-200 text-center whitespace-nowrap">
-                                  <span className={`inline-block py-0.5 px-1.5 rounded text-[9px] font-extrabold ${
+                                <td className="col-estado py-1 px-1 border-r border-slate-200 text-center whitespace-nowrap">
+                                  <span className={`inline-block py-0.5 px-1 rounded text-[8.5px] font-extrabold ${
                                     isApproved
                                       ? 'bg-emerald-50 text-emerald-800 border border-emerald-400'
                                       : 'bg-amber-50 text-amber-800 border border-amber-400'
@@ -621,13 +645,13 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                                     {effectiveStatus}
                                   </span>
                                 </td>
-                                <td className="py-1 px-1.5 text-slate-700">
-                                  <div className="text-[8px] leading-tight">
+                                <td className="col-observaciones py-1 px-1.5 text-slate-800 text-[9.5px] print:text-[9.5px] leading-tight align-top">
+                                  <div className="text-[9.5px] print:text-[9.5px] leading-tight text-slate-800 font-normal">
                                     {session.observations || 'Formación regular concertada.'}
                                   </div>
                                   {session.responsible && (
-                                    <div className="text-[7.5px] text-slate-500">
-                                      Resp: <strong>{session.responsible}</strong>
+                                    <div className="text-[8.5px] print:text-[8.5px] text-slate-600 mt-0.5 font-medium">
+                                      Resp: <strong className="text-slate-700">{session.responsible}</strong>
                                     </div>
                                   )}
                                 </td>

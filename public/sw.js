@@ -1,4 +1,4 @@
-const CACHE_NAME = 'legado-print-pinnedfooter-v6';
+const CACHE_NAME = 'legado-print-colwidths-v7';
 
 self.addEventListener('install', () => self.skipWaiting());
 
