@@ -28,7 +28,7 @@ export const PdfHeader: React.FC<PdfHeaderProps> = ({
   });
 
   return (
-    <header className="pdf-header-root print-header border-b-2 border-slate-900 pb-2 mb-2.5 print:pb-1.5 print:mb-2 bg-white print:bg-white print:block">
+    <header className="pdf-header-root print-header border-b-2 border-slate-900 pb-2 mb-2 print:pb-1 print:mb-1.5 bg-white print:bg-white print:block">
       <div className="flex print:flex items-center justify-between w-full gap-3">
         {/* Columna Izquierda: Logo LEGADO Oficial (Mínimo 60px de alto, sin opacidad reducida, alto contraste) */}
         <div className="w-52 sm:w-60 print:w-56 shrink-0 flex print:flex items-center justify-start py-0.5">

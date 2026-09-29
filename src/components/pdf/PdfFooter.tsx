@@ -11,11 +11,14 @@ export const PdfFooter: React.FC<PdfFooterProps> = ({
 }) => {
   return (
     <footer 
-      className="pdf-footer-root print-footer mt-auto pt-2 print:mt-auto print:pt-1.5 border-t border-slate-300 bg-white print:bg-white w-full print:block"
+      className="pdf-footer-root print-footer mt-auto pt-2 print:mt-auto print:pt-1 border-t border-slate-300 bg-white print:bg-white w-full print:block"
       style={{
         marginTop: 'auto',
+        paddingTop: '6px',
         breakInside: 'avoid',
         pageBreakInside: 'avoid',
+        breakBefore: 'avoid',
+        pageBreakBefore: 'avoid',
       }}
     >
       {/* Fila fija con los 5 logos de aliados alineados horizontalmente y centrados (mínimo 30px de alto cada uno) */}

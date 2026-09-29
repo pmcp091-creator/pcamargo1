@@ -255,7 +255,8 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
       {/* Estilos CSS específicos de impresión: sin saltos forzados de página y protección de corte de filas */}
       <style>{`
         @page {
-          ${paperOrientation === 'landscape' ? 'size: letter landscape; margin: 6mm 8mm;' : 'size: auto; margin: 8mm 10mm;'}
+          size: auto;
+          margin: 5mm 6mm !important;
         }
         @media print {
           html, body, #root {
@@ -289,13 +290,17 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
-            min-height: 96vh !important;
+            height: auto !important;
+            min-height: calc(100vh - 12mm) !important;
+            max-height: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
             box-sizing: border-box !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
             width: 100% !important;
             min-width: 100% !important;
             max-width: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
             color: #0f172a !important;
@@ -306,14 +311,19 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             display: block !important;
             visibility: visible !important;
             background: #ffffff !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
-          .print-footer, footer.print-footer, .pdf-footer-root {
+          .print-footer, #printable-agenda footer, #printable-agenda > div:last-child, footer.print-footer, .pdf-footer-root {
             display: block !important;
             visibility: visible !important;
             background: #ffffff !important;
             margin-top: auto !important;
-            break-inside: avoid !important;
+            padding-top: 8px !important;
+            page-break-before: avoid !important;
+            break-before: avoid !important;
             page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           table {
             border-collapse: collapse !important;
@@ -325,15 +335,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           tfoot {
             display: table-footer-group !important;
           }
-          tr {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
-          td, th {
-            break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
-          .avoid-break {
+          tr, td, th, .avoid-break {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
           }
@@ -436,7 +438,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
         {/* 2. BLOQUE ULTRA-COMPACTO DE RESUMEN (TOTAL, PRESENCIALES, VIRTUALES, PERIODO) */}
         {/* ========================================================================= */}
         {sectionsConfig.dashboardKpis && (
-          <div className="grid grid-cols-4 gap-1 mb-2 print:mb-1.5 p-1 print:p-0.5 bg-slate-50 border border-slate-300 rounded text-center print-kpis">
+          <div className="grid grid-cols-4 gap-1 mb-1.5 print:mb-1 p-1 print:p-0.5 bg-slate-50 border border-slate-300 rounded text-center print-kpis">
             <div className="border-r border-slate-200 pr-1">
               <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-slate-500 block">Total Sesiones</span>
               <span className="text-xs sm:text-sm print:text-[11px] font-black text-slate-900 block leading-tight">{kpis.total}</span>
@@ -466,7 +468,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
         {/* 3. TABLA CONTINUA UNIFICADA DE FORMACIONES (INICIA DE INMEDIATO EN PÁGINA 1) */}
         {/* ========================================================================= */}
         {sectionsConfig.scheduleGrid && (
-          <div className="mb-3 print:mb-1.5 print-schedule">
+          <div className="mb-2 print:mb-1 print-schedule">
             {sortedSessions.length === 0 ? (
               <div className="p-4 text-center text-slate-500 bg-slate-50 border border-slate-200 rounded-lg font-medium text-xs">
                 No hay sesiones programadas para este periodo o filtro seleccionado.
@@ -623,7 +625,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
         {/* 4. BLOQUE DE FIRMAS TÉCNICAS COMPACTO */}
         {/* ========================================================================= */}
         {sectionsConfig.signatureBlock && (
-          <div className="mt-3 pt-2 border-t border-slate-300 grid grid-cols-2 gap-6 avoid-break" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
+          <div className="mt-2 pt-1.5 print:mt-1 print:pt-1 border-t border-slate-300 grid grid-cols-2 gap-4 avoid-break" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
             <div className="text-center">
               <div className="h-8 border-b border-slate-400 mx-auto w-44 mb-1 flex items-end justify-center">
               </div>

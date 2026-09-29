@@ -956,7 +956,8 @@ export default function App() {
       {/* Estilos CSS Dinámicos para Imprenta */}
       <style>{`
         @page {
-          ${paperOrientation === 'landscape' ? 'size: letter landscape; margin: 6mm 8mm;' : 'size: auto; margin: 8mm 10mm;'}
+          size: auto;
+          margin: 5mm 6mm !important;
         }
         @media print {
           html, body, #root {
@@ -990,13 +991,17 @@ export default function App() {
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
-            min-height: 96vh !important;
+            height: auto !important;
+            min-height: calc(100vh - 12mm) !important;
+            max-height: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
             box-sizing: border-box !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
             width: 100% !important;
             min-width: 100% !important;
             max-width: none !important;
-            margin: 0 !important;
-            padding: 0 !important;
             background: #ffffff !important;
             background-color: #ffffff !important;
             color: #0f172a !important;
@@ -1007,14 +1012,19 @@ export default function App() {
             display: block !important;
             visibility: visible !important;
             background: #ffffff !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
-          .print-footer, footer.print-footer, .pdf-footer-root {
+          .print-footer, #printable-agenda footer, #printable-agenda > div:last-child, footer.print-footer, .pdf-footer-root {
             display: block !important;
             visibility: visible !important;
             background: #ffffff !important;
             margin-top: auto !important;
-            break-inside: avoid !important;
+            padding-top: 8px !important;
+            page-break-before: avoid !important;
+            break-before: avoid !important;
             page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
           ${!printSections.header ? '.print-header { display: none !important; }' : ''}
           ${!printSections.dashboardKpis ? '.print-kpis { display: none !important; }' : ''}
