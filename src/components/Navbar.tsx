@@ -90,11 +90,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
             {/* Cabecera Limpia con Logo Oficial de Legado */}
             <div className="flex items-center gap-3.5 min-w-0">
-              <div className="flex items-center shrink-0">
+              <div className="flex items-center shrink-0 bg-white p-2 rounded-xl shadow-xs border border-slate-200/90 dark:border-slate-700/80">
                 <img 
                   src="/logos/legado.png" 
                   alt="Legado para los Territorios" 
-                  className="h-10 md:h-12 w-auto object-contain" 
+                  className="h-20 sm:h-22 md:h-24 w-auto object-contain" 
                 />
               </div>
 
@@ -174,12 +174,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 w-full">
           {/* Logo Legado, Titles con contenedor aislado */}
           <div className="flex items-center gap-4 min-w-0">
-            {/* Contenedor estricto para Logo Legado */}
-            <div className="flex items-center shrink-0">
+            {/* Contenedor estricto para Logo Legado con contraste reforzado y tamaño ampliado */}
+            <div className="flex items-center shrink-0 bg-white p-2 rounded-xl shadow-xs border border-slate-200/90 dark:border-slate-700/80">
               <img 
                 src="/logos/legado.png" 
                 alt="Legado para los Territorios" 
-                className="h-10 md:h-12 w-auto object-contain" 
+                className="h-20 sm:h-22 md:h-24 w-auto object-contain" 
               />
             </div>
 

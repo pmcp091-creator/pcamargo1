@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { generateDirectPDF } from '../utils/pdfExport';
 import { ordenarSesionesDelDia, getStartMinutes } from '../utils/sorting';
+import { PdfLayout } from './pdf';
 
 export const getExportSessionStatus = (session: TrainingSession): string => {
   return session.status || 'APROBADO';
@@ -274,6 +275,9 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           thead {
             display: table-header-group !important;
           }
+          tfoot {
+            display: table-footer-group !important;
+          }
           tr {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
@@ -359,64 +363,22 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
         </div>
       </header>
 
-      {/* Contenedor Imprimible Oficial (Renderizado Estrictamente UNA Vez en el DOM) */}
-      <div 
+      {/* Contenedor Imprimible Oficial Unificado mediante PdfLayout Global */}
+      <PdfLayout
         id="printable-official-document"
-        className="max-w-[1280px] mx-auto p-4 sm:p-6 bg-white text-slate-900 print:p-0 print:m-0 print:max-w-none"
+        showHeader={sectionsConfig.header}
+        showFooter={sectionsConfig.footer}
+        headerProps={{
+          branding,
+          docTitle,
+          scopeLabel,
+          effectivePeriod,
+          showSeal: true,
+        }}
+        footerProps={{
+          customLegend: 'Documento Técnico Oficial Concertado • Alianza Grupo Energía Bogotá • ACDI/VOCA • Fundación Promigas • Enlaza • The Biz Nation • Sistema de Gestión de Formaciones La Guajira 2026.',
+        }}
       >
-        {/* ========================================================================= */}
-        {/* 1. MEMBRETE COMPACTO SUPERIOR */}
-        {/* ========================================================================= */}
-        {sectionsConfig.header && (
-          <div className="border-b border-slate-900 pb-1.5 mb-2 print:pb-1 print:mb-1.5 print-header">
-            <div className="flex items-center justify-between w-full gap-3">
-              {/* Columna izquierda: Logo Legado Oficial */}
-              <div className="w-36 sm:w-44 shrink-0 flex items-center justify-start">
-                <img 
-                  src="/logos/legado.png" 
-                  alt="Legado para los Territorios" 
-                  className="h-8 print:h-7 w-auto object-contain filter invert contrast-200" 
-                />
-              </div>
-
-              {/* Columna central: Alianza y Título compactos */}
-              <div className="flex-1 text-center min-w-0 px-1">
-                <p className="text-[8.5px] print:text-[8px] font-bold tracking-wide uppercase text-slate-700 leading-tight">
-                  ALIANZA: GRUPO ENERGÍA BOGOTÁ • ACDI/VOCA • FUNDACIÓN PROMIGAS • ENLAZA • THE BIZ NATION
-                </p>
-                <h1 className="text-xs sm:text-sm print:text-[11px] font-black text-slate-950 uppercase tracking-tight leading-tight mt-0.5">
-                  {branding.programTitle || 'PROGRAMA VOCACIÓN QUE TRANSFORMA'}
-                </h1>
-                <p className="text-[11px] print:text-[9.5px] font-bold text-slate-800 leading-tight">
-                  {docTitle}
-                </p>
-                <div className="text-[8px] print:text-[7.5px] text-slate-600 mt-0.5 flex items-center justify-center flex-wrap gap-2 font-medium leading-tight">
-                  <span><strong>Alcance:</strong> {scopeLabel}</span>
-                  <span>•</span>
-                  <span><strong>Periodo:</strong> {effectivePeriod}</span>
-                  <span>•</span>
-                  <span><strong>Emisión:</strong> {new Date().toLocaleDateString('es-CO')}</span>
-                  <span>•</span>
-                  <span><strong>Coordinador:</strong> {branding.coordinatorName || 'Pompilio Camargo'}</span>
-                  <span>•</span>
-                  <span><strong>Ing. Sistemas:</strong> {branding.engineerName || 'Luis Ángel Camargo'}</span>
-                </div>
-              </div>
-
-              {/* Columna derecha: Sello Oficial compacto */}
-              <div className="w-28 sm:w-36 shrink-0 flex flex-col items-end justify-center text-right">
-                <span className="inline-flex items-center gap-1 text-[8.5px] print:text-[8px] font-extrabold text-emerald-800 bg-emerald-50 border border-emerald-300 px-1.5 py-0.5 rounded shadow-2xs">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
-                  Concertado 2026
-                </span>
-                <span className="text-[7.5px] text-slate-500 font-semibold mt-0.5">
-                  La Guajira, Colombia
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* ========================================================================= */}
         {/* 2. BLOQUE ULTRA-COMPACTO DE RESUMEN (TOTAL, PRESENCIALES, VIRTUALES, PERIODO) */}
         {/* ========================================================================= */}
@@ -638,29 +600,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             </div>
           </div>
         )}
-
-        {/* ========================================================================= */}
-        {/* 5. PIE DE PÁGINA IMPRIMIBLE CON LOS 5 LOGOS */}
-        {/* ========================================================================= */}
-        {sectionsConfig.footer && (
-          <div className="mt-3 pt-2 border-t border-slate-300 avoid-break" style={{ breakInside: 'avoid', pageBreakInside: 'avoid' }}>
-            <div className="flex items-center justify-between gap-3 flex-wrap print:flex">
-              <img src="/logos/grupo_energia_bogota.png" alt="GEB" className="h-6 w-auto object-contain" />
-              <img src="/logos/acdi.png" alt="ACDI/VOCA" className="h-6 w-auto object-contain" />
-              <img src="/logos/promigas.png" alt="Promigas" className="h-6 w-auto object-contain" />
-              <img src="/logos/enlaza.png" alt="Enlaza" className="h-6 w-auto object-contain" />
-              <img src="/logos/biz_nation.png" alt="Biz Nation" className="h-6 w-auto object-contain" />
-            </div>
-
-            {/* Pie de página Legal */}
-            <div className="text-center text-[7.5px] text-slate-500 pt-1 border-t border-slate-200 mt-1">
-              <p>
-                Documento Técnico Oficial Concertado • Sistema de Gestión de Formaciones Territoriales La Guajira 2026.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
+      </PdfLayout>
     </div>
   );
 };

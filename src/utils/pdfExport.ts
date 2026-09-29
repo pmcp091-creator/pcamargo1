@@ -59,7 +59,7 @@ export const generateDirectPDF = async ({
     },
     pagebreak: {
       mode: ['css', 'legacy'],
-      avoid: ['tr', '.avoid-break', '.print-kpis', '.print-header']
+      avoid: ['tr', '.avoid-break', '.print-kpis', '.print-header', '.pdf-header-root', '.pdf-footer-root']
     }
   };
 

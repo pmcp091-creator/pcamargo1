@@ -115,11 +115,11 @@ export const BrandingView: React.FC<BrandingViewProps> = ({
         {/* Header Preview Container */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 bg-slate-800/90 rounded-xl border border-slate-700 w-full">
           <div className="flex items-center gap-4 min-w-0">
-            <div className="flex items-center shrink-0 bg-white p-2 rounded-xl shadow-xs border border-slate-200">
+            <div className="flex items-center shrink-0 bg-white p-2.5 rounded-xl shadow-xs border border-slate-200">
               <img 
                 src="/logos/legado.png" 
                 alt="Legado para los Territorios" 
-                className="h-10 md:h-12 w-auto object-contain" 
+                className="h-16 md:h-20 w-auto object-contain" 
               />
             </div>
             <div className="flex flex-col min-w-0 justify-center overflow-hidden">
