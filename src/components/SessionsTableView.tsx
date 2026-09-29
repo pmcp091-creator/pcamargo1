@@ -168,14 +168,14 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
             </p>
           </div>
 
-          {/* Acciones de exportación y gestión */}
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Acciones de exportación y gestión - Grilla simétrica de 2 columnas en móvil */}
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:items-center gap-2 w-full sm:w-auto">
             {onOpenNewSession && isAdmin && (
               <button
                 type="button"
                 id="btn-table-new-session"
                 onClick={onOpenNewSession}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 min-h-[44px] bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4 stroke-[3]" />
                 <span>Nueva Sesión</span>
@@ -187,7 +187,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                 type="button"
                 id="btn-table-quick-assign"
                 onClick={onOpenQuickAssign}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 min-h-[44px] bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer w-full sm:w-auto"
               >
                 <Sparkles className="w-4 h-4" />
                 <span>Asignación Masiva</span>
@@ -199,7 +199,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                 type="button"
                 id="btn-table-export-excel"
                 onClick={() => onExportExcel(undefined, sortBy, sortOrder)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 min-h-[44px] bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer w-full sm:w-auto"
                 title="Exporta estrictamente las sesiones filtradas en pantalla con membrete y logos oficiales"
               >
                 <FileSpreadsheet className="w-4 h-4" />
@@ -217,7 +217,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                     : undefined;
                   onPrint(displayedSessions, title);
                 }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 min-h-[44px] bg-slate-800 hover:bg-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer w-full sm:w-auto"
                 title="Imprimir o generar PDF oficial con las sesiones filtradas en pantalla"
               >
                 <Printer className="w-4 h-4 text-amber-400" />
@@ -230,7 +230,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
                 type="button"
                 id="btn-table-export-html"
                 onClick={onExportHTML}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 min-h-[44px] bg-slate-800 hover:bg-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow-xs transition active:scale-95 cursor-pointer w-full sm:w-auto"
               >
                 <Download className="w-4 h-4" />
                 <span>HTML Oficial</span>
