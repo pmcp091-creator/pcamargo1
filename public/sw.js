@@ -1,4 +1,4 @@
-const CACHE_NAME = 'legado-cache-mobile-v2';
+const CACHE_NAME = 'legado-matriz-touch-v1';
 
 self.addEventListener('install', () => self.skipWaiting());
 

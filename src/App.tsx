@@ -52,6 +52,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 
 // Components
 import { Navbar, ActiveTab } from './components/Navbar';
+import { BottomNav } from './components/BottomNav';
 import { TableView, SessionsTableView } from './components/TableView';
 import { CalendarView } from './components/CalendarView';
 import { InstitutionsView } from './components/InstitutionsView';
@@ -1063,7 +1064,7 @@ export default function App() {
       />
 
       {/* Área de Contenido */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-20 md:pb-4 space-y-4">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-14 landscape:pt-11 md:pt-4 pb-14 landscape:pb-12 md:pb-4 space-y-4">
         {isInstitutionalKiosk ? (
           isPrintView ? (
             <PrintView

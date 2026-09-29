@@ -306,11 +306,12 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     });
   }, [weekStartDate]);
 
-  // Fecha activa seleccionada para impresión y visualización rápida
-  const [selectedDate, setSelectedDate] = useState<string>('2026-09-15');
+  // Fecha activa seleccionada para visualización e impresión (permite deseleccionar con null)
+  const [selectedDate, setSelectedDate] = useState<string | null>('2026-09-15');
   const [showPrintModal, setShowPrintModal] = useState<boolean>(false);
 
   const selectedDateObj = useMemo(() => {
+    if (!selectedDate) return null;
     const parts = selectedDate.split('-').map(Number);
     if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
       return new Date(parts[0], parts[1] - 1, parts[2]);
@@ -319,6 +320,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   }, [selectedDate, currentYear, currentMonth]);
 
   const selectedDateFormatted = useMemo(() => {
+    if (!selectedDateObj) return '';
     const dayName = DAYS_HEADER[selectedDateObj.getDay()] || 'Día';
     const monthName = MONTH_NAMES[selectedDateObj.getMonth()] || 'Mes';
     return `${dayName}, ${selectedDateObj.getDate()} de ${monthName} de ${selectedDateObj.getFullYear()}`;
@@ -331,9 +333,10 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       monday = new Date(weekStartDate);
       monday.setDate(monday.getDate() + 1); // Sunday + 1 = Monday
     } else {
-      const dayOfWeek = selectedDateObj.getDay(); // 0 = Domingo, 1 = Lunes, ... 6 = Sábado
+      const baseDate = selectedDateObj || new Date(currentYear, currentMonth, 15);
+      const dayOfWeek = baseDate.getDay(); // 0 = Domingo, 1 = Lunes, ... 6 = Sábado
       const offsetToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-      monday = new Date(selectedDateObj);
+      monday = new Date(baseDate);
       monday.setDate(monday.getDate() + offsetToMonday);
     }
     monday.setHours(0, 0, 0, 0);
@@ -369,6 +372,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
 
   // Formaciones filtradas del Día Actual seleccionado
   const currentDaySessions = useMemo(() => {
+    if (!selectedDate || !selectedDateObj) return [];
     const dayName = DAYS_HEADER[selectedDateObj.getDay()];
     const dayNumber = selectedDateObj.getDate();
     const raw = getSessionsForDate(selectedDate, dayName, dayNumber);
@@ -427,7 +431,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-14 landscape:pb-12">
       {/* Top Banner & Filter Controls */}
       <div className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs dark:shadow-xl transition-colors">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -664,14 +668,14 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
           </div>
 
           {/* Calendar Day Cells Grid */}
-          <div className="grid grid-cols-7 border-l border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/40 rounded-b-xl min-h-[560px]">
+          <div className="grid grid-cols-7 border-l border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/40 rounded-b-xl min-h-auto md:min-h-[560px]">
             {/* 1. Leading cells from previous month */}
             {Array.from({ length: firstDayOfWeek }).map((_, i) => {
               const dayNum = daysInPrevMonth - firstDayOfWeek + i + 1;
               return (
                 <div
                   key={`prev-${i}`}
-                  className="min-h-[110px] p-2 bg-slate-100/50 dark:bg-slate-950/60 border-r border-b border-slate-200 dark:border-slate-800/40 opacity-40 text-xs text-slate-400 dark:text-slate-600 cursor-not-allowed select-none"
+                  className="min-h-[58px] landscape:min-h-[46px] md:min-h-[110px] p-1 md:p-2 bg-slate-100/50 dark:bg-slate-950/60 border-r border-b border-slate-200 dark:border-slate-800/40 opacity-40 text-xs text-slate-400 dark:text-slate-600 cursor-not-allowed select-none overflow-hidden"
                 >
                   <span className="font-semibold">{dayNum}</span>
                 </div>
@@ -711,21 +715,21 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                 <div
                   key={`day-${dayNumber}`}
                   onClick={() => setSelectedDate(dateStr)}
-                  className={`min-h-[120px] p-2 border-r border-b border-slate-200 dark:border-slate-800/70 flex flex-col justify-between transition-colors cursor-pointer group ${
+                  className={`border-r border-b border-slate-200 dark:border-slate-800/70 flex flex-col justify-between transition-colors cursor-pointer group overflow-hidden p-1 min-h-[58px] landscape:min-h-[46px] md:min-h-[120px] md:p-2 ${
                     isSelectedDay 
-                      ? 'ring-2 ring-inset ring-amber-400 dark:ring-amber-500 bg-amber-50/30 dark:bg-amber-950/20' 
-                      : ''
-                  } ${
-                    isOvercapacity 
+                      ? 'ring-2 ring-amber-400 bg-amber-500/10 rounded-lg' 
+                      : isOvercapacity 
                       ? 'bg-rose-50/70 dark:bg-rose-950/20' 
                       : 'bg-white dark:bg-slate-900/50'
                   }`}
                 >
                   {/* Top Day Header inside cell */}
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className={`text-xs font-black ${
+                  <div className="flex items-center justify-between mb-0.5 md:mb-1.5">
+                    <span className={`text-[11px] md:text-xs font-black ${
                       dateStr === '2026-09-11'
-                        ? 'bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full shadow-xs'
+                        ? 'bg-amber-400 text-slate-950 px-1.5 md:px-2 py-0.2 md:py-0.5 rounded-full shadow-xs'
+                        : isSelectedDay
+                        ? 'text-amber-500 dark:text-amber-400 font-black'
                         : 'text-slate-700 dark:text-slate-300'
                     }`}>
                       {dayNumber}
@@ -735,14 +739,18 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                       {/* Uribia Capacity Indicator Badge */}
                       {uribiaCount > 0 && (
                         <span
-                          className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isOvercapacity ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40' : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'}`}
+                          className={`text-[8px] px-1 py-0.2 rounded font-bold ${
+                            isOvercapacity
+                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                              : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                          }`}
                           title={`Uribia presencial hoy: ${uribiaCount}/2 sedes`}
                         >
                           U: {uribiaCount}/2
                         </span>
                       )}
 
-                      {/* Quick Add Button (Solo Admin) */}
+                      {/* Quick Add Button (Solo Admin en desktop) */}
                       {isAdmin && (
                         <button
                           type="button"
@@ -750,7 +758,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                             e.stopPropagation();
                             onAddSessionForDate(dateStr);
                           }}
-                          className="opacity-60 group-hover:opacity-100 p-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
+                          className="hidden md:block opacity-60 group-hover:opacity-100 p-1 text-slate-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
                           title={`Programar sesión para el ${dayNumber} de ${MONTH_NAMES[currentMonth]}`}
                         >
                           <Plus className="w-3.5 h-3.5" />
@@ -759,8 +767,26 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Event Badges List inside cell */}
-                  <div className="space-y-1 overflow-y-auto max-h-[85px] pr-0.5 scrollbar-thin">
+                  {/* Vista móvil (< md): fila horizontal centrada con puntos indicadores (dots) sin tarjetas de texto ni scroll */}
+                  <div className="flex md:hidden items-center justify-center gap-1 my-auto py-0.5 flex-wrap">
+                    {sortedDaySessions.slice(0, sortedDaySessions.length > 4 ? 3 : 4).map((s, idx) => (
+                      <span
+                        key={s.id || idx}
+                        className={`w-2 h-2 rounded-full shadow-sm shrink-0 ${
+                          s.modality === 'Presencial' ? 'bg-emerald-400' : 'bg-sky-400'
+                        }`}
+                        title={`${s.modality}: ${s.institution}`}
+                      />
+                    ))}
+                    {sortedDaySessions.length > 4 && (
+                      <span className="text-[8px] font-extrabold text-amber-500 dark:text-amber-400 leading-none">
+                        +{sortedDaySessions.length - 3}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Vista escritorio (>= md): Tarjetas de texto completas originales */}
+                  <div className="hidden md:block space-y-1 overflow-y-auto max-h-[85px] pr-0.5 scrollbar-thin">
                     {sortedDaySessions.map(session => {
                       const isPast = esSesionHistorica(session.specificDate || session.date);
 
@@ -827,7 +853,7 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
               return Array.from({ length: nextMonthDays }).map((_, i) => (
                 <div
                   key={`next-${i}`}
-                  className="min-h-[110px] p-2 bg-slate-950/60 border-r border-b border-slate-800/40 opacity-30 text-xs text-slate-600 cursor-not-allowed select-none"
+                  className="min-h-[58px] landscape:min-h-[46px] md:min-h-[110px] p-1 md:p-2 bg-slate-950/60 border-r border-b border-slate-800/40 opacity-30 text-xs text-slate-600 cursor-not-allowed select-none overflow-hidden"
                 >
                   <span className="font-semibold">{i + 1}</span>
                 </div>
@@ -1023,6 +1049,131 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
       )}
 
+      {/* ------------------------------------------------------------- */}
+      {/* 4. PANEL CONTEXTUAL DEL DÍA ACTIVO SELECCIONADO               */}
+      {/*    Visible únicamente cuando hay un día seleccionado          */}
+      {/* ------------------------------------------------------------- */}
+      {selectedDate && selectedDateObj && (
+        <div 
+          id="active-day-context-panel"
+          className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-amber-400 dark:border-amber-500/80 p-3 sm:p-5 landscape:py-1 landscape:px-3 shadow-xl space-y-2 landscape:space-y-1.5 animate-in fade-in slide-in-from-top-2 duration-200"
+        >
+          {/* a) Barra de título y b) Botón contextual "Imprimir Agenda" */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 landscape:pb-1 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-base sm:text-xl landscape:text-sm shrink-0">📅</span>
+              <div className="min-w-0">
+                <h3 className="text-xs sm:text-base landscape:text-xs font-extrabold text-slate-900 dark:text-white truncate">
+                  {selectedDateFormatted} — {currentDaySessions.length} {currentDaySessions.length === 1 ? 'Formación programada' : 'Formaciones programadas'}
+                </h3>
+                <p className="text-[10px] sm:text-[11px] landscape:text-[9px] text-slate-500 dark:text-slate-400 font-medium">
+                  {currentDaySessions.filter(s => s.modality === 'Presencial').length} Presenciales • {currentDaySessions.filter(s => s.modality === 'Virtual').length} Virtuales
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5 self-end sm:self-center shrink-0">
+              {/* Botón Contextual "Imprimir Agenda" */}
+              <button
+                type="button"
+                id="btn-contextual-print-agenda"
+                onClick={() => setShowPrintModal(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 landscape:py-1 landscape:px-2.5 bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white text-xs landscape:text-[10px] font-bold rounded-xl border border-slate-700 shadow-xs transition active:scale-95 cursor-pointer"
+                title="Imprimir la agenda de este día o de la semana completa"
+              >
+                <span>🖨️</span>
+                <span>Imprimir Agenda</span>
+              </button>
+
+              {/* Botón de cerrar "✕" que deselecciona el día */}
+              <button
+                type="button"
+                id="btn-close-active-day-panel"
+                onClick={() => setSelectedDate(null)}
+                className="w-7 h-7 landscape:w-6 landscape:h-6 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
+                title="Cerrar panel y deseleccionar día"
+                aria-label="Cerrar selección de día"
+              >
+                <X className="w-4 h-4 landscape:w-3.5 landscape:h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* c) Lista de formaciones del día: Tarjetas legibles y sin truncamiento */}
+          {currentDaySessions.length === 0 ? (
+            <div className="text-center py-4 text-slate-400 dark:text-slate-500 text-xs italic">
+              No hay formaciones programadas para esta fecha.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 landscape:gap-1.5">
+              {currentDaySessions.map(session => {
+                const isPast = esSesionHistorica(session.specificDate || session.date);
+                const isPresencial = session.modality === 'Presencial';
+
+                return (
+                  <div
+                    key={session.id}
+                    onClick={() => setSelectedSessionForDetail(session)}
+                    className={`p-2.5 landscape:py-1.5 landscape:px-2.5 rounded-xl border transition-all cursor-pointer space-y-1.5 landscape:space-y-1 hover:shadow-md ${
+                      isPast
+                        ? 'bg-slate-50/80 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 opacity-75'
+                        : isPresencial
+                        ? 'bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-200/80 dark:border-emerald-800/60 hover:border-emerald-400'
+                        : 'bg-sky-50/40 dark:bg-sky-950/20 border-sky-200/80 dark:border-sky-800/60 hover:border-sky-400'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`text-[10px] landscape:text-[9px] font-black uppercase tracking-wider px-2 py-0.5 landscape:py-0.2 rounded-md ${
+                          isPresencial
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300'
+                            : 'bg-sky-100 text-sky-800 dark:bg-sky-900/50 dark:text-sky-300'
+                        }`}>
+                          {isPresencial ? '🏛️ Presencial' : '💻 Virtual'}
+                        </span>
+                        <span className="text-[10px] landscape:text-[9px] font-bold px-2 py-0.5 landscape:py-0.2 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                          {session.municipality}
+                        </span>
+                        {isPast && (
+                          <span className="text-[9px] landscape:text-[8px] font-bold px-1.5 py-0.5 landscape:py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-500 flex items-center gap-1">
+                            <Lock className="w-2.5 h-2.5" /> Histórico
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs landscape:text-[10px] font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1 shrink-0 bg-white dark:bg-slate-800 px-2 py-0.5 landscape:py-0.2 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <Clock className="w-3.5 h-3.5 landscape:w-3 landscape:h-3 text-amber-500" />
+                        <span>{session.startTime} - {session.endTime}</span>
+                      </span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs sm:text-sm landscape:text-xs font-extrabold text-slate-900 dark:text-white leading-snug">
+                        {session.institution}
+                      </h4>
+                      {session.campus && session.campus !== session.institution && (
+                        <p className="text-[11px] landscape:text-[9px] text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3 h-3 text-slate-400" />
+                          <span>Sede: <strong>{session.campus}</strong></span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2 text-[11px] landscape:text-[9px] text-slate-600 dark:text-slate-300">
+                      <span className="font-semibold text-indigo-700 dark:text-indigo-400">
+                        {session.trainingType || session.topic || 'Formación'}
+                      </span>
+                      <span className="text-slate-500 dark:text-slate-400">
+                        {session.targetAudience || session.targetPopulation || 'Estudiantes'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* QUICK OPERATIONAL REFERENCE CARDS (From User's HTML) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
         {/* Card 1: Uribia Rules */}
@@ -1202,15 +1353,15 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
         </div>
       )}
 
-      {/* Botón de Acción Flotante (FAB) para Móvil: botón circular amarillo con icono "+" de 48x48px */}
+      {/* Botón de Acción Flotante (FAB) para Móvil: botón circular amarillo con icono "+" */}
       <button
         id="fab-calendar-new-session"
-        onClick={() => onAddSessionForDate(`${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-15`)}
-        className="md:hidden fixed bottom-16 right-4 z-40 w-12 h-12 bg-amber-400 hover:bg-amber-500 active:scale-95 text-slate-950 rounded-full shadow-2xl flex items-center justify-center font-black transition-all border-2 border-amber-300/80 cursor-pointer"
+        onClick={() => onAddSessionForDate(selectedDate || `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-15`)}
+        className="fixed bottom-12 landscape:bottom-10 right-3 z-40 w-10 h-10 landscape:w-9 landscape:h-9 flex items-center justify-center text-lg shadow-lg bg-amber-400 hover:bg-amber-500 active:scale-95 text-slate-950 rounded-full font-black transition-all border-2 border-amber-300/80 cursor-pointer"
         title="Nueva Sesión"
         aria-label="Nueva Sesión"
       >
-        <Plus className="w-6 h-6 stroke-[3]" />
+        <Plus className="w-5 h-5 landscape:w-4 landscape:h-4 stroke-[3]" />
       </button>
     </div>
   );

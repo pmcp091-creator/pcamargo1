@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { BrandingSettings, InstitutionProfile } from '../types/schedule';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { BottomNav } from './BottomNav';
 
 export type ActiveTab = 'table' | 'calendar' | 'institutions' | 'validator' | 'branding' | 'requests' | 'dashboard';
 
@@ -139,39 +140,39 @@ export const Header: React.FC<HeaderProps> = ({
     const shifts = institutionProfile?.shifts?.join(' / ') || 'Jornada Mañana';
 
     return (
-      <header className="app-main-header bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-xs print:hidden transition-colors">
+      <header className="app-main-header fixed top-0 left-0 right-0 z-50 bg-[#0a1128]/95 backdrop-blur-md border-b border-slate-800 md:sticky md:top-0 print:hidden transition-colors">
         {/* Cabecera Móvil Kiosco */}
-        <div className="md:hidden mobile-compact-bar h-14 landscape:h-10 max-h-14 landscape:max-h-10 px-3 landscape:px-2 py-1 landscape:py-0.5 flex items-center justify-between gap-2 w-full">
+        <div className="md:hidden mobile-compact-bar h-14 landscape:h-11 max-h-14 landscape:max-h-11 px-3 landscape:px-2 py-1 landscape:py-0.5 flex items-center justify-between gap-2 w-full">
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <img 
               src="/logos/legado.png" 
               alt="Legado" 
               className="h-7 w-auto object-contain block shrink-0" 
             />
-            <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate">
-              LEGADO <span className="text-amber-600 dark:text-amber-400 font-semibold">• {displayName}</span>
+            <span className="text-sm font-bold tracking-tight text-white truncate">
+              LEGADO <span className="text-amber-400 font-semibold">• {displayName}</span>
             </span>
           </div>
 
           <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={onPrint}
-              className="w-9 h-9 landscape:w-8 landscape:h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-lg border border-slate-200 dark:border-slate-700 transition active:scale-95 cursor-pointer"
+              className="w-9 h-9 landscape:w-8 landscape:h-8 flex items-center justify-center bg-slate-800 text-slate-200 rounded-lg border border-slate-700 transition active:scale-95 cursor-pointer"
               title="🖨️ Imprimir / PDF"
             >
               <Printer className="w-4 h-4" />
             </button>
             <button
               onClick={onExportExcel || onExportCSV}
-              className="w-9 h-9 landscape:w-8 landscape:h-8 flex items-center justify-center bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-800 transition active:scale-95 cursor-pointer"
+              className="w-9 h-9 landscape:w-8 landscape:h-8 flex items-center justify-center bg-emerald-950/60 text-emerald-300 rounded-lg border border-emerald-800 transition active:scale-95 cursor-pointer"
               title="📊 Descargar Excel"
             >
-              <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+              <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
             </button>
             {onToggleDarkMode && (
               <button
                 onClick={onToggleDarkMode}
-                className="w-9 h-9 landscape:w-8 landscape:h-8 flex items-center justify-center bg-white dark:bg-slate-800 text-slate-700 dark:text-amber-400 rounded-lg border border-slate-200 dark:border-slate-700 transition active:scale-95 cursor-pointer"
+                className="w-9 h-9 landscape:w-8 landscape:h-8 flex items-center justify-center bg-slate-800 text-amber-400 rounded-lg border border-slate-700 transition active:scale-95 cursor-pointer"
                 title={isDarkMode ? 'Modo Claro' : 'Modo Oscuro'}
               >
                 {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -261,12 +262,12 @@ export const Header: React.FC<HeaderProps> = ({
   // =========================================================================
   return (
     <>
-      <header className="app-main-header bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-xs print:hidden transition-colors">
+      <header className="app-main-header fixed top-0 left-0 right-0 z-50 bg-[#0a1128]/95 backdrop-blur-md border-b border-slate-800 md:sticky md:top-0 print:hidden transition-colors">
         {/* ----------------------------------------------------------------- */}
         {/* 1. CABECERA MÓVIL ULTRA COMPACTA (block md:hidden)               */}
-        {/*    h-14 (56px) en vertical y h-10 (40px) en horizontal (landscape) */}
+        {/*    h-14 (56px) en vertical y h-11 en horizontal (landscape)       */}
         {/* ----------------------------------------------------------------- */}
-        <div className="md:hidden mobile-compact-bar h-14 landscape:h-10 max-h-14 landscape:max-h-10 px-3 landscape:px-2 py-1 landscape:py-0.5 flex items-center justify-between gap-2 w-full">
+        <div className="md:hidden mobile-compact-bar h-14 landscape:h-11 max-h-14 landscape:max-h-11 px-3 landscape:px-2 py-1 landscape:py-0.5 flex items-center justify-between gap-2 w-full">
           {/* Lado izquierdo: Logo oficial compacto (h-7 w-auto) y texto "LEGADO" en negrita */}
           <div className="flex items-center gap-2 min-w-0 flex-1">
             <img 
@@ -274,7 +275,7 @@ export const Header: React.FC<HeaderProps> = ({
               alt="Legado" 
               className="h-7 w-auto object-contain block shrink-0" 
             />
-            <span className="text-sm font-bold tracking-tight text-slate-900 dark:text-white truncate">
+            <span className="text-sm font-bold tracking-tight text-white truncate">
               LEGADO
             </span>
           </div>
@@ -303,7 +304,7 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               id="btn-mobile-drawer-toggle"
               onClick={() => setIsDrawerOpen(true)}
-              className="w-9 h-9 landscape:w-8 landscape:h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition cursor-pointer"
+              className="w-9 h-9 landscape:w-8 landscape:h-8 flex items-center justify-center bg-slate-800 text-slate-200 border border-slate-700 rounded-lg hover:bg-slate-700 active:scale-95 transition cursor-pointer"
               title="Menú de opciones"
               aria-label="Menú principal"
             >
@@ -581,81 +582,14 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* ----------------------------------------------------------------- */}
       {/* 3. BARRA DE NAVEGACIÓN INFERIOR FIJA EN MÓVIL (BOTTOM NAVIGATION) */}
-      {/*    fixed bottom-0 left-0 right-0 z-40 bg-[#0a1128]                */}
+      {/*    Siempre visible en móvil portrait y landscape                  */}
       {/* ----------------------------------------------------------------- */}
-      {!isInstitutionalKiosk && (
-        <nav 
-          aria-label="Navegación móvil inferior"
-          className="mobile-bottom-nav md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-[#0a1128]/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 flex justify-around items-center py-2 px-1 shadow-lg"
-        >
-          <button
-            onClick={() => setActiveTab('table')}
-            className={`flex flex-col items-center justify-center flex-1 py-1 gap-1 text-[10px] font-semibold transition cursor-pointer ${
-              activeTab === 'table'
-                ? 'text-amber-500 dark:text-amber-400'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <FileSpreadsheet className="w-5 h-5" />
-            <span>Matriz</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('calendar')}
-            className={`flex flex-col items-center justify-center flex-1 py-1 gap-1 text-[10px] font-semibold transition cursor-pointer ${
-              activeTab === 'calendar'
-                ? 'text-amber-500 dark:text-amber-400'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <CalendarDays className="w-5 h-5" />
-            <span>Calendario</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex flex-col items-center justify-center flex-1 py-1 gap-1 text-[10px] font-semibold transition cursor-pointer ${
-              activeTab === 'dashboard'
-                ? 'text-amber-500 dark:text-amber-400'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <BarChart3 className="w-5 h-5" />
-            <span>Dashboard</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('institutions')}
-            className={`flex flex-col items-center justify-center flex-1 py-1 gap-1 text-[10px] font-semibold transition cursor-pointer ${
-              activeTab === 'institutions'
-                ? 'text-amber-500 dark:text-amber-400'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Building2 className="w-5 h-5" />
-            <span>Sedes (12)</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('validator')}
-            className={`flex flex-col items-center justify-center flex-1 py-1 gap-1 text-[10px] font-semibold transition relative cursor-pointer ${
-              activeTab === 'validator'
-                ? 'text-amber-500 dark:text-amber-400'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <div className="relative">
-              <ShieldAlert className="w-5 h-5" />
-              {conflictCount > 0 && (
-                <span className="absolute -top-1 -right-1.5 bg-red-600 text-white rounded-full text-[8px] font-black w-3.5 h-3.5 flex items-center justify-center">
-                  {conflictCount}
-                </span>
-              )}
-            </div>
-            <span>Uribia</span>
-          </button>
-        </nav>
-      )}
+      <BottomNav
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        conflictCount={conflictCount}
+        isInstitutionalKiosk={isInstitutionalKiosk}
+      />
 
       {/* ----------------------------------------------------------------- */}
       {/* 4. DRAWER LATERAL / MODAL MÓVIL                                   */}

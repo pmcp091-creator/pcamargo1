@@ -150,7 +150,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
     sortOrder !== 'asc';
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-28 landscape:pb-20">
       {/* Barra de Título y Métricas Centralizadas */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -299,7 +299,7 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
           </div>
 
           {/* Selectores de Filtro Centralizado */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap landscape:flex-nowrap landscape:overflow-x-auto gap-2 py-1 items-center">
             {/* Filtro Municipio */}
             <select
               id="select-municipality-filter"
@@ -419,10 +419,14 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
         </div>
       </div>
 
+      {/* Aviso sutil en móvil vertical */}
+      <div className="text-[11px] text-slate-400 flex items-center gap-1.5 mb-2 px-1">
+        ↔ Desliza horizontalmente para ver la matriz completa
+      </div>
+
       {/* Tabla Oficial Completa */}
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+      <div className="w-full overflow-x-auto overflow-y-visible touch-auto [-webkit-overflow-scrolling:touch] block border border-slate-200 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900 shadow-xs">
+        <table className="min-w-[950px] w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700">
                 <th 
@@ -847,7 +851,6 @@ export const SessionsTableView: React.FC<SessionsTableViewProps> = ({
             </tbody>
           </table>
         </div>
-      </div>
     </div>
   );
 };

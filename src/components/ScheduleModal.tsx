@@ -438,11 +438,11 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden my-6 border border-slate-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-[92vw] max-w-lg max-h-[85dvh] overflow-hidden my-auto border border-slate-200 flex flex-col">
         
         {/* Header Modal */}
-        <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between">
+        <div className="p-3.5 sm:p-5 landscape:py-2.5 bg-slate-900 text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="p-2 bg-amber-500 rounded-lg text-slate-950">
               <Clock className="w-5 h-5 font-black" />
@@ -463,7 +463,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
         </div>
 
         {/* Formulario */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 landscape:p-3 space-y-3 sm:space-y-4 overflow-y-auto flex-1">
           
           {conflictWarning && (
             <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-2.5 text-xs text-amber-900 font-medium">
@@ -851,7 +851,7 @@ export const ScheduleModal: React.FC<ScheduleModalProps> = ({
           </div>
 
           {/* Botones de acción */}
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-3 mt-4">
+          <div className="p-3 sm:p-4 landscape:py-2.5 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2 sm:gap-3 mt-3 sm:mt-4 sticky bottom-0 z-10 shadow-sm">
             {editingSession && onDelete ? (
               <button
                 type="button"

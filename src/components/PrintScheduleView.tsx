@@ -363,9 +363,15 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
         </div>
       </header>
 
+      {/* Aviso sutil en móvil para desplazamiento horizontal de la hoja */}
+      <div className="md:hidden text-[11px] text-slate-400 dark:text-slate-400 flex items-center justify-center gap-1.5 py-1 px-2 no-print">
+        ↔ Desliza horizontalmente para ver la hoja completa
+      </div>
+
       {/* Contenedor Imprimible Oficial Unificado mediante PdfLayout Global */}
-      <PdfLayout
-        id="printable-official-document"
+      <div className="w-full max-w-full overflow-x-auto overflow-y-visible touch-auto [-webkit-overflow-scrolling:touch] p-2 print:p-0 print:overflow-visible">
+        <PdfLayout
+          id="printable-official-document"
         showHeader={sectionsConfig.header}
         showFooter={sectionsConfig.footer}
         headerProps={{
@@ -600,7 +606,8 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             </div>
           </div>
         )}
-      </PdfLayout>
+        </PdfLayout>
+      </div>
     </div>
   );
 };

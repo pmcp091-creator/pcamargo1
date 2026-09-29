@@ -33,7 +33,7 @@ export const PdfLayout: React.FC<PdfLayoutProps> = ({
   return (
     <div
       id={id}
-      className={`pdf-layout-root bg-white text-slate-900 w-full max-w-[1280px] mx-auto p-4 sm:p-6 print:p-0 print:m-0 print:max-w-none ${className}`}
+      className={`pdf-layout-root bg-white text-slate-900 w-full min-w-[760px] md:min-w-0 max-w-[1280px] mx-auto p-4 sm:p-6 print:p-0 print:m-0 print:max-w-none print:min-w-0 ${className}`}
     >
       {repeatOnEveryPage ? (
         <table className="w-full border-collapse border-0 print-layout-table">
