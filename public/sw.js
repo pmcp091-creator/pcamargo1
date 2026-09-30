@@ -1,4 +1,4 @@
-const CACHE_NAME = 'legado-print-tableheadfoot-v9';
+const CACHE_NAME = 'legado-print-fixedfooter-v10';
 
 self.addEventListener('install', () => self.skipWaiting());
 

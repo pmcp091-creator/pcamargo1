@@ -291,7 +291,10 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
       <style>{`
         @page {
           size: auto;
-          margin: 5mm 7mm !important;
+          margin: 5mm 6mm 7mm 6mm !important;
+        }
+        .print-footer-fixed {
+          display: none;
         }
         @media print {
           /* 1. Liberar la altura en el documento para permitir varias páginas en Agenda Semanal / General */
@@ -341,8 +344,38 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           }
           #printable-agenda, #printable-agenda *,
           #printable-official-document, #printable-official-document *,
-          .print-sheet, .print-sheet * {
-            visibility: visible;
+          .print-sheet, .print-sheet *,
+          .print-footer-fixed, .print-footer-fixed * {
+            visibility: visible !important;
+          }
+
+          /* Pie de página fijo en fondo de todas las hojas */
+          .print-footer-fixed {
+            display: block !important;
+            visibility: visible !important;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: 38px !important;
+            background: #ffffff !important;
+            z-index: 9999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
+          .print-footer-fixed img {
+            max-height: 20px !important;
+            display: inline-block !important;
+            visibility: visible !important;
+          }
+
+          /* Espaciador en tfoot para evitar colisiones con el footer fijo */
+          tfoot.print-spacer-footer {
+            display: table-footer-group !important;
+            height: 44px !important;
           }
 
           /* 2. Contenedor semanal en bloque sin flexbox limitante */
@@ -785,22 +818,12 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                       );
                     })}
                   </tbody>
+                  {/* Espaciador transparente en la tabla (tfoot) para evitar colisiones con el footer fijo */}
                   {isWeekly && sectionsConfig.footer && (
-                    <tfoot className="print-table-footer">
-                      <tr className="border-0 bg-white">
-                        <td colSpan={9} className="border-0 p-0 bg-white pt-2">
-                          <div className="border-t border-slate-300 pt-2 px-1 flex justify-between items-center bg-white">
-                            <div className="flex items-center gap-4">
-                              <img src="/logos/geb.png" alt="GEB" className="h-5 object-contain" />
-                              <img src="/logos/acdivoca.png" alt="ACDI/VOCA" className="h-5 object-contain" />
-                              <img src="/logos/promigas.png" alt="Promigas" className="h-5 object-contain" />
-                              <img src="/logos/enlaza.png" alt="Enlaza" className="h-5 object-contain" />
-                              <img src="/logos/biznation.png" alt="The Biz Nation" className="h-5 object-contain" />
-                            </div>
-                            <span className="text-[8px] text-slate-500 font-medium">
-                              Documento Técnico Oficial Concertado • Alianza Grupo Energía Bogotá • ACDI/VOCA • Fundación Promigas • Enlaza • The Biz Nation • 2026.
-                            </span>
-                          </div>
+                    <tfoot className="print-spacer-footer">
+                      <tr className="border-0 bg-transparent">
+                        <td colSpan={9} className="border-0 p-0 bg-transparent" style={{ height: '44px' }}>
+                          <div style={{ height: '44px', visibility: 'hidden' }}></div>
                         </td>
                       </tr>
                     </tfoot>
@@ -842,6 +865,24 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
               <p className="text-[7.5px] text-slate-500">
                 Validación Técnica y Concertación
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Pie de página oficial que se repetirá en todas las hojas fijado al fondo */}
+        {isWeekly && sectionsConfig.footer && (
+          <div className="print-footer-fixed">
+            <div className="border-t border-slate-300 pt-1.5 px-1 flex justify-between items-center bg-white">
+              <div className="flex items-center gap-4">
+                <img src="/logos/grupo_energia_bogota.png" alt="GEB" className="h-5 object-contain" />
+                <img src="/logos/acdi.png" alt="ACDI/VOCA" className="h-5 object-contain" />
+                <img src="/logos/promigas.png" alt="Promigas" className="h-5 object-contain" />
+                <img src="/logos/enlaza.png" alt="Enlaza" className="h-5 object-contain" />
+                <img src="/logos/biz_nation.png" alt="The Biz Nation" className="h-5 object-contain" />
+              </div>
+              <span className="text-[8px] text-slate-500 font-medium leading-[1.1] max-w-[55%] text-right">
+                Documento Técnico Oficial Concertado • Alianza Grupo Energía Bogotá • ACDI/VOCA • Fundación Promigas • Enlaza • The Biz Nation • Sistema de Gestión de Formaciones La Guajira 2026.
+              </span>
             </div>
           </div>
         )}
