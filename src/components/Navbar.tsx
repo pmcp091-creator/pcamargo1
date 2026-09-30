@@ -45,6 +45,7 @@ interface NavbarProps {
   sessionRole: 'admin' | 'viewer';
   onOpenAdminLogin: () => void;
   onLogoutAdmin: () => void;
+  onResetMatrix?: () => void;
   restrictedInstName?: string | null;
   institutionProfile?: InstitutionProfile | null;
   isInstitutionalKiosk?: boolean;
@@ -71,6 +72,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   sessionRole,
   onOpenAdminLogin,
   onLogoutAdmin,
+  onResetMatrix,
   restrictedInstName,
   institutionProfile,
   isInstitutionalKiosk = false,

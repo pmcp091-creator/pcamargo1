@@ -29,17 +29,27 @@ export const PdfLayout: React.FC<PdfLayoutProps> = ({
   children,
   className = '',
 }) => {
+  const isMulti = className.includes('print-multi-page');
+
   return (
     <div
       id={id || 'printable-agenda'}
-      className={`pdf-layout-root print-sheet bg-white text-slate-900 w-full min-w-[760px] md:min-w-0 max-w-[1280px] mx-auto p-4 sm:p-6 print:p-0 print:m-0 print:max-w-none print:min-w-0 print:w-full flex flex-col justify-between print:h-full print:min-h-full min-h-full box-border ${className}`}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        minHeight: '100%',
-        boxSizing: 'border-box',
-      }}
+      className={`pdf-layout-root print-sheet bg-white text-slate-900 w-full min-w-[760px] md:min-w-0 max-w-[1280px] mx-auto p-4 sm:p-6 print:p-0 print:m-0 print:max-w-none print:min-w-0 print:w-full box-border ${
+        isMulti
+          ? 'print-multi-page print:block print:h-auto print:min-h-0'
+          : 'print-single-page print:flex print:flex-col print:justify-between print:h-full print:min-h-full'
+      } ${className}`}
+      style={
+        isMulti
+          ? { boxSizing: 'border-box' }
+          : {
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between',
+              minHeight: '100%',
+              boxSizing: 'border-box',
+            }
+      }
     >
       {showHeader && <PdfHeader {...headerProps} />}
       <div className="flex-1 w-full print-content-body flex flex-col grow">

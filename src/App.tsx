@@ -960,9 +960,16 @@ export default function App() {
           margin: 5mm 7mm !important;
         }
         @media print {
+          /* 1. Liberar la altura en el documento para permitir varias páginas en Agenda Semanal / General */
+          html, body, #root, main, div[role="dialog"], .print-multi-page {
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            overflow: visible !important;
+            position: static !important;
+          }
+
           html, body, #root, #root > div, main, .min-h-screen {
-            height: 100% !important;
-            min-height: 100% !important;
             margin: 0 !important;
             margin-top: 0 !important;
             padding: 0 !important;
@@ -991,50 +998,98 @@ export default function App() {
           .print-sheet, .print-sheet * {
             visibility: visible;
           }
-          #printable-agenda, #printable-official-document, .print-sheet {
-            display: flex !important;
-            flex-direction: column !important;
-            justify-content: space-between !important;
-            min-height: 100% !important;
-            height: 100% !important;
+
+          /* 2. Contenedor semanal en bloque sin flexbox limitante */
+          #printable-agenda.print-multi-page,
+          .print-sheet.print-multi-page {
+            display: block !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            page-break-inside: auto !important;
+            break-inside: auto !important;
             box-sizing: border-box !important;
             margin: 0 !important;
             padding: 0 !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            width: 100% !important;
-            min-width: 100% !important;
-            max-width: none !important;
             background: #ffffff !important;
-            background-color: #ffffff !important;
             color: #0f172a !important;
             border: none !important;
             box-shadow: none !important;
           }
-          .print-header {
-            display: block !important;
-            visibility: visible !important;
-            background: #ffffff !important;
-            margin-top: 0 !important;
-            padding-top: 2px !important;
-            margin-bottom: 6px !important;
+
+          /* 3. Paginación limpia de la tabla semanal */
+          .print-multi-page table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            page-break-inside: auto !important;
+            break-inside: auto !important;
+            table-layout: fixed !important;
+          }
+
+          /* Repetir encabezados de columna (#, Horario, Municipio...) en cada hoja */
+          .print-multi-page thead {
+            display: table-header-group !important;
+          }
+
+          /* No cortar filas de sesiones a la mitad */
+          .print-multi-page tr {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
-          /* El bloque central absorbe el espacio sobrante */
-          #printable-agenda > table,
-          #printable-agenda > .table-container,
-          #printable-agenda > .print-content-body,
-          #printable-agenda > div:nth-child(2),
-          #printable-agenda > div:nth-child(3) {
+
+          /* Evitar que las filas divisorias azules de día queden solas al final de una hoja */
+          .print-multi-page tr[class*="bg-slate"],
+          .print-multi-page tr.day-header {
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+          }
+
+          /* Pie de página al final de todas las sesiones de la semana */
+          .print-multi-page .print-footer,
+          .print-multi-page > div:last-child {
+            display: block !important;
+            margin-top: 18px !important;
+            page-break-before: auto !important;
+            break-before: auto !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            visibility: visible !important;
+            background: #ffffff !important;
+            width: 100% !important;
+          }
+
+          /* 4. MANTENER LA AGENDA DIARIA EN 1 SOLA HOJA CON FOOTER AL FONDO (.print-single-page) */
+          #printable-agenda.print-single-page,
+          .print-sheet.print-single-page {
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            min-height: 98% !important;
+            height: 98% !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            box-sizing: border-box !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            min-width: 100% !important;
+            max-width: none !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border: none !important;
+            box-shadow: none !important;
+          }
+
+          #printable-agenda.print-single-page > table,
+          #printable-agenda.print-single-page > .table-container,
+          #printable-agenda.print-single-page > .print-content-body,
+          #printable-agenda.print-single-page > div:nth-child(2),
+          #printable-agenda.print-single-page > div:nth-child(3) {
             flex-grow: 1 !important;
           }
-          /* El pie de página se clava al límite inferior del papel */
-          .print-footer, 
-          #printable-agenda footer, 
-          #printable-agenda > div:last-child,
-          footer.print-footer,
-          .pdf-footer-root {
+
+          #printable-agenda.print-single-page > div:last-child,
+          #printable-agenda.print-single-page .print-footer {
             margin-top: auto !important;
             padding-top: 8px !important;
             width: 100% !important;
@@ -1043,6 +1098,17 @@ export default function App() {
             background: #ffffff !important;
             page-break-before: avoid !important;
             break-before: avoid !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          .print-header {
+            display: block !important;
+            visibility: visible !important;
+            background: #ffffff !important;
+            margin-top: 0 !important;
+            padding-top: 2px !important;
+            margin-bottom: 6px !important;
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }

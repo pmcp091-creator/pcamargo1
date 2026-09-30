@@ -25,12 +25,17 @@ export interface GeneratePdfOptions {
 }
 
 export const generateDirectPDF = async ({
-  elementId = 'printable-official-document',
+  elementId = 'printable-agenda',
   paperFormat,
   paperOrientation,
   restrictedInstName,
 }: GeneratePdfOptions): Promise<void> => {
-  const element = document.getElementById(elementId);
+  const element = 
+    document.getElementById(elementId) || 
+    document.getElementById('printable-agenda') || 
+    document.getElementById('printable-official-document') ||
+    document.querySelector('.print-sheet') as HTMLElement;
+
   if (!element) {
     throw new Error(`Contenedor imprimible #${elementId} no encontrado en el DOM.`);
   }

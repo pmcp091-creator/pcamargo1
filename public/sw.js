@@ -1,4 +1,4 @@
-const CACHE_NAME = 'legado-print-colwidths-v7';
+const CACHE_NAME = 'legado-print-multipage-v8';
 
 self.addEventListener('install', () => self.skipWaiting());
 
