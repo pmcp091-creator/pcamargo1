@@ -29,7 +29,7 @@ export const PdfLayout: React.FC<PdfLayoutProps> = ({
   children,
   className = '',
 }) => {
-  const isMulti = className.includes('print-multi-page');
+  const isMulti = className.includes('print-multi-page') || className.includes('print-weekly');
 
   return (
     <div

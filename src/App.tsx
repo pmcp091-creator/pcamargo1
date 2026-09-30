@@ -961,7 +961,7 @@ export default function App() {
         }
         @media print {
           /* 1. Liberar la altura en el documento para permitir varias páginas en Agenda Semanal / General */
-          html, body, #root, main, div[role="dialog"], .print-multi-page {
+          html, body, #root, main, div[role="dialog"], .print-multi-page, .print-weekly {
             height: auto !important;
             min-height: 0 !important;
             max-height: none !important;
@@ -1000,7 +1000,9 @@ export default function App() {
           }
 
           /* 2. Contenedor semanal en bloque sin flexbox limitante */
+          #printable-agenda.print-weekly,
           #printable-agenda.print-multi-page,
+          .print-sheet.print-weekly,
           .print-sheet.print-multi-page {
             display: block !important;
             width: 100% !important;
@@ -1018,6 +1020,7 @@ export default function App() {
           }
 
           /* 3. Paginación limpia de la tabla semanal */
+          .print-weekly table,
           .print-multi-page table {
             width: 100% !important;
             border-collapse: collapse !important;
@@ -1027,39 +1030,41 @@ export default function App() {
           }
 
           /* Repetir encabezados de columna (#, Horario, Municipio...) en cada hoja */
-          .print-multi-page thead {
+          .print-weekly thead,
+          .print-weekly thead.print-table-header,
+          .print-multi-page thead,
+          .print-multi-page thead.print-table-header {
             display: table-header-group !important;
           }
 
+          /* Forzar repetición en el fondo de cada hoja */
+          .print-weekly tfoot,
+          .print-weekly tfoot.print-table-footer,
+          .print-multi-page tfoot,
+          .print-multi-page tfoot.print-table-footer {
+            display: table-footer-group !important;
+          }
+
           /* No cortar filas de sesiones a la mitad */
+          .print-weekly tr,
           .print-multi-page tr {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
 
           /* Evitar que las filas divisorias azules de día queden solas al final de una hoja */
-          .print-multi-page tr[class*="bg-slate"],
-          .print-multi-page tr.day-header {
+          .print-weekly tr.day-header,
+          .print-weekly tr[class*="bg-slate"],
+          .print-multi-page tr.day-header,
+          .print-multi-page tr[class*="bg-slate"] {
             page-break-after: avoid !important;
             break-after: avoid !important;
           }
 
-          /* Pie de página al final de todas las sesiones de la semana */
-          .print-multi-page .print-footer,
-          .print-multi-page > div:last-child {
-            display: block !important;
-            margin-top: 18px !important;
-            page-break-before: auto !important;
-            break-before: auto !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            visibility: visible !important;
-            background: #ffffff !important;
-            width: 100% !important;
-          }
-
-          /* 4. MANTENER LA AGENDA DIARIA EN 1 SOLA HOJA CON FOOTER AL FONDO (.print-single-page) */
+          /* 4. MANTENER LA AGENDA DIARIA EN 1 SOLA HOJA CON FOOTER AL FONDO (.print-daily / .print-single-page) */
+          #printable-agenda.print-daily,
           #printable-agenda.print-single-page,
+          .print-sheet.print-daily,
           .print-sheet.print-single-page {
             display: flex !important;
             flex-direction: column !important;
@@ -1080,6 +1085,11 @@ export default function App() {
             box-shadow: none !important;
           }
 
+          #printable-agenda.print-daily > table,
+          #printable-agenda.print-daily > .table-container,
+          #printable-agenda.print-daily > .print-content-body,
+          #printable-agenda.print-daily > div:nth-child(2),
+          #printable-agenda.print-daily > div:nth-child(3),
           #printable-agenda.print-single-page > table,
           #printable-agenda.print-single-page > .table-container,
           #printable-agenda.print-single-page > .print-content-body,
@@ -1088,6 +1098,8 @@ export default function App() {
             flex-grow: 1 !important;
           }
 
+          #printable-agenda.print-daily > div:last-child,
+          #printable-agenda.print-daily .print-footer,
           #printable-agenda.print-single-page > div:last-child,
           #printable-agenda.print-single-page .print-footer {
             margin-top: auto !important;

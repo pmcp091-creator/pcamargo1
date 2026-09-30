@@ -1,4 +1,4 @@
-const CACHE_NAME = 'legado-print-multipage-v8';
+const CACHE_NAME = 'legado-print-tableheadfoot-v9';
 
 self.addEventListener('install', () => self.skipWaiting());
 

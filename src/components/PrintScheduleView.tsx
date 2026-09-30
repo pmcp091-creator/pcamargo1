@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { generateDirectPDF } from '../utils/pdfExport';
 import { ordenarSesionesDelDia, getStartMinutes } from '../utils/sorting';
-import { PdfLayout } from './pdf';
+import { PdfLayout, PdfHeader, PdfFooter } from './pdf';
 
 export const getExportSessionStatus = (session: TrainingSession): string => {
   return session.status || 'APROBADO';
@@ -233,11 +233,12 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
   };
 
   // Detección dinámica del tipo de reporte: Semanal / Concertado / Más de 6 formaciones vs Agenda Diaria
-  const isMultiPage = Boolean(
+  const isWeekly = Boolean(
     docTitle?.toLowerCase().includes('semanal') || 
     docTitle?.toLowerCase().includes('concertado') || 
     sessions.length > 6
   );
+  const isMultiPage = isWeekly;
 
   // Generación y descarga directa de PDF oficial
   const handleDownloadPDF = async () => {
@@ -257,8 +258,35 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
     }
   };
 
+  const renderKpis = () => (
+    <div className="grid grid-cols-4 gap-1 my-1 p-1 bg-slate-50 border border-slate-300 rounded text-center print-kpis">
+      <div className="border-r border-slate-200 py-1 px-2">
+        <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-slate-500 block">Total Sesiones</span>
+        <span className="text-xs sm:text-sm print:text-xs font-black text-slate-900 block leading-tight">{kpis.total}</span>
+        <span className="text-[7px] text-slate-500 block">Programadas</span>
+      </div>
+      <div className="border-r border-slate-200 py-1 px-2">
+        <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-emerald-700 block">Presenciales</span>
+        <span className="text-xs sm:text-sm print:text-xs font-black text-emerald-800 block leading-tight">{kpis.presencial}</span>
+        <span className="text-[7px] text-emerald-600 block">Aula Territorial</span>
+      </div>
+      <div className="border-r border-slate-200 py-1 px-2">
+        <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-sky-700 block">Virtuales</span>
+        <span className="text-xs sm:text-sm print:text-xs font-black text-sky-800 block leading-tight">{kpis.virtual}</span>
+        <span className="text-[7px] text-sky-600 block">Conexión Sincrónica</span>
+      </div>
+      <div className="py-1 px-2">
+        <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-amber-700 block">Periodo</span>
+        <span className="text-[10px] print:text-[8.5px] font-black text-amber-900 block truncate leading-tight" title={effectivePeriod}>
+          {effectivePeriod}
+        </span>
+        <span className="text-[7px] text-amber-700 block">{kpis.approved} Aprobadas ({kpis.pct}%)</span>
+      </div>
+    </div>
+  );
+
   return (
-    <div className={`min-h-screen bg-slate-100 dark:bg-slate-950 print:bg-white text-slate-800 dark:text-slate-100 font-sans print:m-0 print:p-0 ${isMultiPage ? 'print:h-auto print:min-h-0' : ''}`}>
+    <div className={`min-h-screen bg-slate-100 dark:bg-slate-950 print:bg-white text-slate-800 dark:text-slate-100 font-sans print:m-0 print:p-0 ${isWeekly ? 'print-weekly print-multi-page print:h-auto print:min-h-0' : 'print-daily print-single-page'}`}>
       {/* Estilos CSS específicos de impresión: sin saltos forzados de página y protección de corte de filas */}
       <style>{`
         @page {
@@ -267,8 +295,8 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
         }
         @media print {
           /* 1. Liberar la altura en el documento para permitir varias páginas en Agenda Semanal / General */
-          html, body, #root, main, div[role="dialog"], .print-multi-page {
-            ${isMultiPage ? `
+          html, body, #root, main, div[role="dialog"], .print-multi-page, .print-weekly {
+            ${isWeekly ? `
             height: auto !important;
             min-height: 0 !important;
             max-height: none !important;
@@ -278,7 +306,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           }
 
           html, body, #root, #root > div, main, .min-h-screen {
-            ${isMultiPage ? `
+            ${isWeekly ? `
             height: auto !important;
             min-height: 0 !important;
             max-height: none !important;
@@ -318,7 +346,9 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           }
 
           /* 2. Contenedor semanal en bloque sin flexbox limitante */
+          #printable-agenda.print-weekly,
           #printable-agenda.print-multi-page,
+          .print-sheet.print-weekly,
           .print-sheet.print-multi-page {
             display: block !important;
             width: 100% !important;
@@ -336,6 +366,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           }
 
           /* 3. Paginación limpia de la tabla semanal */
+          .print-weekly table,
           .print-multi-page table {
             width: 100% !important;
             border-collapse: collapse !important;
@@ -344,40 +375,42 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             table-layout: fixed !important;
           }
 
-          /* Repetir encabezados de columna (#, Horario, Municipio...) en cada hoja */
-          .print-multi-page thead {
+          /* Forzar repetición en el tope de cada hoja */
+          .print-weekly thead,
+          .print-weekly thead.print-table-header,
+          .print-multi-page thead,
+          .print-multi-page thead.print-table-header {
             display: table-header-group !important;
           }
 
+          /* Forzar repetición en el fondo de cada hoja */
+          .print-weekly tfoot,
+          .print-weekly tfoot.print-table-footer,
+          .print-multi-page tfoot,
+          .print-multi-page tfoot.print-table-footer {
+            display: table-footer-group !important;
+          }
+
           /* No cortar filas de sesiones a la mitad */
+          .print-weekly tr,
           .print-multi-page tr {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
           }
 
-          /* Evitar que las filas divisorias azules de día queden solas al final de una hoja */
-          .print-multi-page tr[class*="bg-slate"],
-          .print-multi-page tr.day-header {
+          /* Evitar que las cabeceras de día queden huérfanas al final de una hoja */
+          .print-weekly tr.day-header,
+          .print-weekly tr[class*="bg-slate"],
+          .print-multi-page tr.day-header,
+          .print-multi-page tr[class*="bg-slate"] {
             page-break-after: avoid !important;
             break-after: avoid !important;
           }
 
-          /* Pie de página al final de todas las sesiones de la semana */
-          .print-multi-page .print-footer,
-          .print-multi-page > div:last-child {
-            display: block !important;
-            margin-top: 18px !important;
-            page-break-before: auto !important;
-            break-before: auto !important;
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            visibility: visible !important;
-            background: #ffffff !important;
-            width: 100% !important;
-          }
-
-          /* 4. MANTENER LA AGENDA DIARIA EN 1 SOLA HOJA CON FOOTER AL FONDO (.print-single-page) */
+          /* 4. MANTENER LA AGENDA DIARIA EN 1 SOLA HOJA CON FOOTER AL FONDO (.print-daily / .print-single-page) */
+          #printable-agenda.print-daily,
           #printable-agenda.print-single-page,
+          .print-sheet.print-daily,
           .print-sheet.print-single-page {
             display: flex !important;
             flex-direction: column !important;
@@ -398,6 +431,11 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             box-shadow: none !important;
           }
 
+          #printable-agenda.print-daily > table,
+          #printable-agenda.print-daily > .table-container,
+          #printable-agenda.print-daily > .print-content-body,
+          #printable-agenda.print-daily > div:nth-child(2),
+          #printable-agenda.print-daily > div:nth-child(3),
           #printable-agenda.print-single-page > table,
           #printable-agenda.print-single-page > .table-container,
           #printable-agenda.print-single-page > .print-content-body,
@@ -406,6 +444,8 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             flex-grow: 1 !important;
           }
 
+          #printable-agenda.print-daily > div:last-child,
+          #printable-agenda.print-daily .print-footer,
           #printable-agenda.print-single-page > div:last-child,
           #printable-agenda.print-single-page .print-footer {
             margin-top: auto !important;
@@ -550,52 +590,27 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
       </div>
 
       {/* Contenedor Imprimible Oficial Unificado mediante PdfLayout Global */}
-      <div className={`w-full max-w-full overflow-x-auto overflow-y-visible touch-auto [-webkit-overflow-scrolling:touch] p-2 print:p-0 print:m-0 print:overflow-visible ${isMultiPage ? 'print:h-auto print:min-h-0' : 'print:h-full print:min-h-full'}`}>
+      <div className={`w-full max-w-full overflow-x-auto overflow-y-visible touch-auto [-webkit-overflow-scrolling:touch] p-2 print:p-0 print:m-0 print:overflow-visible ${isWeekly ? 'print:h-auto print:min-h-0' : 'print:h-full print:min-h-full'}`}>
         <PdfLayout
           id="printable-agenda"
-          className={isMultiPage ? 'print-multi-page' : 'print-single-page'}
-          showHeader={sectionsConfig.header}
-          showFooter={sectionsConfig.footer}
-        headerProps={{
-          branding,
-          docTitle,
-          scopeLabel,
-          effectivePeriod,
-          showSeal: true,
-        }}
-        footerProps={{
-          customLegend: 'Documento Técnico Oficial Concertado • Alianza Grupo Energía Bogotá • ACDI/VOCA • Fundación Promigas • Enlaza • The Biz Nation • Sistema de Gestión de Formaciones La Guajira 2026.',
-        }}
-      >
+          className={isWeekly ? 'print-weekly print-multi-page' : 'print-daily print-single-page'}
+          showHeader={!isWeekly && sectionsConfig.header}
+          showFooter={!isWeekly && sectionsConfig.footer}
+          headerProps={{
+            branding,
+            docTitle,
+            scopeLabel,
+            effectivePeriod,
+            showSeal: true,
+          }}
+          footerProps={{
+            customLegend: 'Documento Técnico Oficial Concertado • Alianza Grupo Energía Bogotá • ACDI/VOCA • Fundación Promigas • Enlaza • The Biz Nation • Sistema de Gestión de Formaciones La Guajira 2026.',
+          }}
+        >
         {/* ========================================================================= */}
-        {/* 2. BLOQUE ULTRA-COMPACTO DE RESUMEN (TOTAL, PRESENCIALES, VIRTUALES, PERIODO) */}
+        {/* 2. BLOQUE ULTRA-COMPACTO DE RESUMEN (EN DIARIA FUERA DE LA TABLA) */}
         {/* ========================================================================= */}
-        {sectionsConfig.dashboardKpis && (
-          <div className="grid grid-cols-4 gap-1 my-1 p-1 bg-slate-50 border border-slate-300 rounded text-center print-kpis">
-            <div className="border-r border-slate-200 py-1 px-2">
-              <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-slate-500 block">Total Sesiones</span>
-              <span className="text-xs sm:text-sm print:text-xs font-black text-slate-900 block leading-tight">{kpis.total}</span>
-              <span className="text-[7px] text-slate-500 block">Programadas</span>
-            </div>
-            <div className="border-r border-slate-200 py-1 px-2">
-              <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-emerald-700 block">Presenciales</span>
-              <span className="text-xs sm:text-sm print:text-xs font-black text-emerald-800 block leading-tight">{kpis.presencial}</span>
-              <span className="text-[7px] text-emerald-600 block">Aula Territorial</span>
-            </div>
-            <div className="border-r border-slate-200 py-1 px-2">
-              <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-sky-700 block">Virtuales</span>
-              <span className="text-xs sm:text-sm print:text-xs font-black text-sky-800 block leading-tight">{kpis.virtual}</span>
-              <span className="text-[7px] text-sky-600 block">Conexión Sincrónica</span>
-            </div>
-            <div className="py-1 px-2">
-              <span className="text-[7.5px] print:text-[7px] font-bold uppercase tracking-wider text-amber-700 block">Periodo</span>
-              <span className="text-[10px] print:text-[8.5px] font-black text-amber-900 block truncate leading-tight" title={effectivePeriod}>
-                {effectivePeriod}
-              </span>
-              <span className="text-[7px] text-amber-700 block">{kpis.approved} Aprobadas ({kpis.pct}%)</span>
-            </div>
-          </div>
-        )}
+        {!isWeekly && sectionsConfig.dashboardKpis && renderKpis()}
 
         {/* ========================================================================= */}
         {/* 3. TABLA CONTINUA UNIFICADA DE FORMACIONES (INICIA DE INMEDIATO EN PÁGINA 1) */}
@@ -609,7 +624,26 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             ) : (
               <div className="border border-slate-300 rounded overflow-visible print:border print:rounded-none">
                 <table className="w-full text-left text-[9px] print:text-[8px] border-collapse">
-                  <thead>
+                  <thead className="print-table-header">
+                    {/* Fila 1: Cabezote institucional que se repetirá en cada hoja */}
+                    {isWeekly && sectionsConfig.header && (
+                      <tr className="border-0 bg-white">
+                        <th colSpan={9} className="border-0 p-0 font-normal text-left bg-white">
+                          <div className="pb-2">
+                            {/* Contenido del Cabezote: Logo, Título, Subtítulo y Tarjetas de Resumen */}
+                            <PdfHeader
+                              branding={branding}
+                              docTitle={docTitle}
+                              scopeLabel={scopeLabel}
+                              effectivePeriod={effectivePeriod}
+                              showSeal={true}
+                            />
+                            {sectionsConfig.dashboardKpis && renderKpis()}
+                          </div>
+                        </th>
+                      </tr>
+                    )}
+                    {/* Fila 2: Encabezados de columnas que ya se repiten */}
                     <tr className="bg-slate-900 text-white font-bold border-b border-slate-400">
                       <th className="col-num py-1 px-1 text-center w-[4%] border-r border-slate-700">#</th>
                       <th className="col-fecha py-1 px-1.5 w-[10%] border-r border-slate-700">Fecha / Día</th>
@@ -751,6 +785,26 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                       );
                     })}
                   </tbody>
+                  {isWeekly && sectionsConfig.footer && (
+                    <tfoot className="print-table-footer">
+                      <tr className="border-0 bg-white">
+                        <td colSpan={9} className="border-0 p-0 bg-white pt-2">
+                          <div className="border-t border-slate-300 pt-2 px-1 flex justify-between items-center bg-white">
+                            <div className="flex items-center gap-4">
+                              <img src="/logos/geb.png" alt="GEB" className="h-5 object-contain" />
+                              <img src="/logos/acdivoca.png" alt="ACDI/VOCA" className="h-5 object-contain" />
+                              <img src="/logos/promigas.png" alt="Promigas" className="h-5 object-contain" />
+                              <img src="/logos/enlaza.png" alt="Enlaza" className="h-5 object-contain" />
+                              <img src="/logos/biznation.png" alt="The Biz Nation" className="h-5 object-contain" />
+                            </div>
+                            <span className="text-[8px] text-slate-500 font-medium">
+                              Documento Técnico Oficial Concertado • Alianza Grupo Energía Bogotá • ACDI/VOCA • Fundación Promigas • Enlaza • The Biz Nation • 2026.
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  )}
                 </table>
               </div>
             )}
