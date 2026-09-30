@@ -96,11 +96,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center justify-between gap-2.5 w-full h-13 landscape:h-11 sm:h-auto mobile-landscape-header">
             {/* Cabecera Limpia con Logo Oficial de Legado */}
             <div className="flex items-center gap-2.5 sm:gap-3.5 min-w-0">
-              <div className="flex items-center shrink-0 bg-white p-1 sm:p-2 rounded-lg sm:rounded-xl shadow-xs border border-slate-200/90 dark:border-slate-700/80">
+              <div className="flex items-center shrink-0">
                 <img 
                   src="/logos/legado.png" 
                   alt="Legado para los Territorios" 
-                  className="h-7 sm:h-20 w-auto object-contain" 
+                  className="h-8 sm:h-9 w-auto object-contain" 
                 />
               </div>
 
@@ -191,24 +191,19 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="flex items-center justify-between gap-3 w-full h-13 landscape:h-11 md:h-auto mobile-landscape-header">
           {/* LADO IZQUIERDO: Logo compacto y Título condensado en móvil */}
           <div className="flex items-center gap-2.5 md:gap-4 min-w-0">
-            {/* Contenedor del Logo Legado */}
-            <div className="flex items-center shrink-0 bg-white p-1 md:p-2 rounded-lg md:rounded-xl shadow-xs border border-slate-200/90 dark:border-slate-700/80">
+            {/* Logo Legado contenido naturalmente */}
+            <div className="flex items-center shrink-0">
               <img 
                 src="/logos/legado.png" 
                 alt="Legado para los Territorios" 
-                className="h-7 md:h-20 w-auto object-contain" 
+                className="h-8 md:h-9 w-auto object-contain" 
               />
             </div>
 
-            {/* Móvil (< md): Título condensado "LEGADO" y oculta textos largos */}
-            <div className="md:hidden flex items-center gap-1.5 min-w-0">
-              <span className="font-bold text-sm text-slate-900 dark:text-white tracking-wide">
-                LEGADO
-              </span>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 px-1.5 py-0.2 rounded border border-blue-100 dark:border-blue-900/60 truncate hidden xs:inline">
-                2026
-              </span>
-            </div>
+            {/* Texto LEGADO: oculto en móvil para no duplicar el logo, visible en tablet/desktop */}
+            <span className="hidden md:inline font-bold text-slate-900 dark:text-white text-lg tracking-wider">
+              LEGADO
+            </span>
 
             {/* Desktop (md+): Textos institucionales completos */}
             <div className="hidden md:flex flex-col min-w-0 justify-center overflow-hidden">
@@ -577,8 +572,8 @@ export const Navbar: React.FC<NavbarProps> = ({
         </>
       )}
 
-      {/* 2. BARRA DE PESTAÑAS TÁCTIL (Navbar / Tabs) CON SCROLL HORIZONTAL SUAVE */}
-      <nav className="flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-none py-1.5 px-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors">
+      {/* 2. BARRA DE PESTAÑAS (Navbar / Tabs): Oculta en móvil (< md), visible en tablet/desktop (md+) */}
+      <nav className="hidden md:flex items-center gap-2 overflow-x-auto whitespace-nowrap scrollbar-none py-1.5 px-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 transition-colors">
         <button
           id="tab-btn-table"
           onClick={() => setActiveTab('table')}

@@ -1359,11 +1359,11 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
       <button
         id="fab-calendar-new-session"
         onClick={() => onAddSessionForDate(selectedDate || `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-15`)}
-        className="fixed bottom-12 landscape:bottom-10 right-3 z-40 w-10 h-10 landscape:w-9 landscape:h-9 flex items-center justify-center text-lg shadow-lg bg-amber-400 hover:bg-amber-500 active:scale-95 text-slate-950 rounded-full font-black transition-all border-2 border-amber-300/80 cursor-pointer"
+        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-30 w-12 h-12 md:w-11 md:h-11 flex items-center justify-center text-lg shadow-xl bg-amber-400 hover:bg-amber-500 active:scale-95 text-slate-950 rounded-full font-black transition-all border-2 border-amber-300/80 cursor-pointer"
         title="Nueva Sesión"
         aria-label="Nueva Sesión"
       >
-        <Plus className="w-5 h-5 landscape:w-4 landscape:h-4 stroke-[3]" />
+        <Plus className="w-6 h-6 md:w-5 md:h-5 stroke-[3]" />
       </button>
     </div>
   );

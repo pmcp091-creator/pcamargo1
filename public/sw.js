@@ -1,4 +1,4 @@
-const CACHE_NAME = 'legado-print-fixedfooter-v10';
+const CACHE_NAME = 'legado-mobile-dock-v12';
 
 self.addEventListener('install', () => self.skipWaiting());
 

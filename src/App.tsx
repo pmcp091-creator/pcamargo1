@@ -957,7 +957,7 @@ export default function App() {
       <style>{`
         @page {
           size: auto;
-          margin: 5mm 6mm 7mm 6mm !important;
+          margin: 8mm 8mm 10mm 8mm !important;
         }
         .print-footer-fixed {
           display: none;
@@ -984,10 +984,12 @@ export default function App() {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          nav, header:not(.print-header), footer:not(.print-footer), 
-          .no-print, [role="dialog"] > div:first-child, .fixed.inset-0.bg-black\/80,
+
+          /* Ocultar toda la interfaz de la aplicación */
+          header:not(.print-header), nav, .bottom-nav, .mobile-bottom-nav, button, .no-print, [role="navigation"],
+          [role="dialog"] > div:first-child, .fixed.inset-0.bg-black\/80,
           .fixed.inset-0.bg-slate-950\/70, .fixed.inset-0.bg-black\/60,
-          #fab-calendar-new-session, .mobile-bottom-nav, button {
+          #fab-calendar-new-session {
             display: none !important;
           }
           * {
@@ -1001,6 +1003,27 @@ export default function App() {
           .print-sheet, .print-sheet *,
           .print-footer-fixed, .print-footer-fixed * {
             visibility: visible !important;
+          }
+
+          /* Mostrar únicamente el contenedor de la agenda */
+          #printable-agenda {
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+          }
+
+          /* Repetir cabecera en cada hoja */
+          #printable-agenda thead {
+            display: table-header-group !important;
+          }
+
+          /* Evitar que las filas se corten a la mitad */
+          #printable-agenda tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
 
           /* Pie de página fijo en fondo de todas las hojas */
@@ -1039,6 +1062,7 @@ export default function App() {
           .print-sheet.print-multi-page {
             display: block !important;
             width: 100% !important;
+            max-width: 100% !important;
             height: auto !important;
             min-height: 0 !important;
             page-break-inside: auto !important;
@@ -1056,10 +1080,12 @@ export default function App() {
           .print-weekly table,
           .print-multi-page table {
             width: 100% !important;
+            max-width: 100% !important;
             border-collapse: collapse !important;
             page-break-inside: auto !important;
             break-inside: auto !important;
             table-layout: fixed !important;
+            box-sizing: border-box !important;
           }
 
           /* Repetir encabezados de columna (#, Horario, Municipio...) en cada hoja */
@@ -1293,7 +1319,7 @@ export default function App() {
       />
 
       {/* Área de Contenido */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-14 landscape:pt-11 md:pt-4 pb-14 landscape:pb-12 md:pb-4 space-y-4">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-14 landscape:pt-11 md:pt-4 pb-24 md:pb-6 space-y-4">
         {isInstitutionalKiosk ? (
           isPrintView ? (
             <PrintView
@@ -1881,7 +1907,7 @@ export default function App() {
       )}
 
       {/* Footer Membretado con los 5 Aliados Estratégicos */}
-      <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-4 px-4 sm:px-6 lg:px-8 text-xs text-slate-500 dark:text-slate-400 no-print mt-auto transition-colors">
+      <footer className="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-4 pb-20 md:pb-4 px-4 sm:px-6 lg:px-8 text-xs text-slate-500 dark:text-slate-400 no-print mt-auto transition-colors">
         <div className="max-w-7xl mx-auto flex flex-col gap-3">
           {/* Fila Horizontal de los 5 Aliados */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -1941,6 +1967,29 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Barra de Navegación Inferior Fija para Móvil (Bottom Nav Dock) */}
+      <BottomNav
+        activeTab={activeTab as ActiveTab}
+        setActiveTab={(tab) => {
+          setIsPrintView(false);
+          setActiveTab(tab);
+        }}
+        conflictCount={highAlertCount}
+        isInstitutionalKiosk={isInstitutionalKiosk}
+        onPrint={() => setShowPrintOptionsModal(true)}
+        onExportExcel={() => handleExportExcel()}
+        onOpenBackup={() => setIsBackupModalOpen(true)}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={toggleDarkMode}
+        sessionRole={sessionRole}
+        onOpenAdminLogin={() => {
+          setAdminKeyInput('');
+          setAdminKeyError('');
+          setShowAdminLoginModal(true);
+        }}
+        onLogoutAdmin={handleLogout}
+      />
 
       {/* Modals Operativos */}
       <ScheduleModal

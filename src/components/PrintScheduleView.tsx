@@ -291,7 +291,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
       <style>{`
         @page {
           size: auto;
-          margin: 5mm 6mm 7mm 6mm !important;
+          margin: 8mm 8mm 10mm 8mm !important;
         }
         .print-footer-fixed {
           display: none;
@@ -330,10 +330,12 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-          nav, header:not(.print-header), footer:not(.print-footer), 
-          .no-print, [role="dialog"] > div:first-child, .fixed.inset-0.bg-black\/80,
+
+          /* Ocultar toda la interfaz de la aplicación */
+          header:not(.print-header), nav, .bottom-nav, .mobile-bottom-nav, button, .no-print, [role="navigation"],
+          [role="dialog"] > div:first-child, .fixed.inset-0.bg-black\/80,
           .fixed.inset-0.bg-slate-950\/70, .fixed.inset-0.bg-black\/60,
-          #fab-calendar-new-session, .mobile-bottom-nav, button {
+          #fab-calendar-new-session {
             display: none !important;
           }
           * {
@@ -347,6 +349,27 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           .print-sheet, .print-sheet *,
           .print-footer-fixed, .print-footer-fixed * {
             visibility: visible !important;
+          }
+
+          /* Mostrar únicamente el contenedor de la agenda */
+          #printable-agenda {
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+          }
+
+          /* Repetir cabecera en cada hoja */
+          #printable-agenda thead {
+            display: table-header-group !important;
+          }
+
+          /* Evitar que las filas se corten a la mitad */
+          #printable-agenda tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
 
           /* Pie de página fijo en fondo de todas las hojas */
@@ -385,6 +408,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           .print-sheet.print-multi-page {
             display: block !important;
             width: 100% !important;
+            max-width: 100% !important;
             height: auto !important;
             min-height: 0 !important;
             page-break-inside: auto !important;
@@ -402,10 +426,12 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           .print-weekly table,
           .print-multi-page table {
             width: 100% !important;
+            max-width: 100% !important;
             border-collapse: collapse !important;
             page-break-inside: auto !important;
             break-inside: auto !important;
             table-layout: fixed !important;
+            box-sizing: border-box !important;
           }
 
           /* Forzar repetición en el tope de cada hoja */
@@ -655,14 +681,14 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                 No hay sesiones programadas para este periodo o filtro seleccionado.
               </div>
             ) : (
-              <div className="border border-slate-300 rounded overflow-visible print:border print:rounded-none">
-                <table className="w-full text-left text-[9px] print:text-[8px] border-collapse">
+              <div className="border border-slate-300 rounded overflow-visible print:border print:rounded-none w-full max-w-full box-border">
+                <table className="w-full max-w-full text-left text-[9px] print:text-[8px] border-collapse box-border table-fixed">
                   <thead className="print-table-header">
                     {/* Fila 1: Cabezote institucional que se repetirá en cada hoja */}
                     {isWeekly && sectionsConfig.header && (
                       <tr className="border-0 bg-white">
-                        <th colSpan={9} className="border-0 p-0 font-normal text-left bg-white">
-                          <div className="pb-2">
+                        <th colSpan={9} className="border-0 p-0 font-normal text-left bg-white w-full max-w-full box-border">
+                          <div className="pb-2 w-full max-w-full box-border overflow-hidden">
                             {/* Contenido del Cabezote: Logo, Título, Subtítulo y Tarjetas de Resumen */}
                             <PdfHeader
                               branding={branding}
