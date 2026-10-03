@@ -319,8 +319,8 @@ export const Navbar: React.FC<NavbarProps> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow-xs transition cursor-pointer"
                 title="Instalar como app en tu computadora o celular para usar siempre sin internet"
               >
-                <HardDriveDownload className="w-3.5 h-3.5 text-blue-400" />
-                <span>Instalar App</span>
+                <img src="/pwa-192x192.png" alt="LEGADO" className="w-4 h-4 rounded-sm object-contain bg-white" />
+                <span>Instalar App LEGADO</span>
               </button>
             )}
 
@@ -532,10 +532,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                     setIsMobileMenuOpen(false);
                     install();
                   }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-amber-900 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 dark:hover:bg-amber-900/60 rounded-xl transition cursor-pointer text-left"
+                  className="w-full flex items-center justify-between px-3 py-2 text-xs font-bold text-amber-900 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/60 hover:bg-amber-200 dark:hover:bg-amber-900/60 rounded-xl transition cursor-pointer text-left border border-amber-300 dark:border-amber-700/60"
                 >
-                  <HardDriveDownload className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-                  <span>Instalar App en este Dispositivo</span>
+                  <div className="flex items-center gap-2.5">
+                    <img src="/pwa-192x192.png" alt="LEGADO" className="w-5 h-5 rounded-md object-contain bg-white border border-amber-300 shrink-0" />
+                    <span>Instalar App LEGADO</span>
+                  </div>
+                  <span className="text-[10px] bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-bold">
+                    PWA
+                  </span>
                 </button>
               )}
 

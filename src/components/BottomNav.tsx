@@ -4,6 +4,7 @@ import {
   ShieldAlert, Settings, Printer, FileSpreadsheet, Share2, Sun, Moon, KeyRound, LogOut, X 
 } from 'lucide-react';
 import { ActiveTab } from './Navbar';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 export interface BottomNavProps {
   activeTab: ActiveTab;
@@ -34,6 +35,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onOpenAdminLogin,
   onLogoutAdmin,
 }) => {
+  const { isInstallable, install } = usePWAInstall();
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   if (isInstitutionalKiosk) return null;
@@ -206,6 +208,26 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 >
                   <FileSpreadsheet className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span>Exportar Matriz a Excel (.xlsx)</span>
+                </button>
+              )}
+
+              {/* Opción Instalar Aplicación LEGADO */}
+              {isInstallable && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsMoreMenuOpen(false);
+                    install();
+                  }}
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-950 dark:text-amber-200 font-bold border border-amber-200 dark:border-amber-800/60 transition cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <img src="/pwa-192x192.png" alt="LEGADO" className="w-5 h-5 rounded-md object-contain border border-amber-300" />
+                    <span>Instalar App LEGADO</span>
+                  </div>
+                  <span className="text-[10px] bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-bold">
+                    PWA
+                  </span>
                 </button>
               )}
 

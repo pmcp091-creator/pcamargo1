@@ -957,7 +957,7 @@ export default function App() {
       <style>{`
         @page {
           size: auto;
-          margin: 8mm 8mm 10mm 8mm !important;
+          margin: 6mm 8mm 10mm 8mm !important;
         }
         .print-footer-fixed {
           display: none;
@@ -1026,9 +1026,10 @@ export default function App() {
             break-inside: avoid !important;
           }
 
-          /* Pie de página fijo en fondo de todas las hojas */
+          /* Pie de página fijo en fondo de todas las hojas con altura controlada */
           .print-footer-fixed {
-            display: block !important;
+            display: flex !important;
+            flex-direction: column !important;
             visibility: visible !important;
             position: fixed !important;
             bottom: 0 !important;
@@ -1043,16 +1044,35 @@ export default function App() {
             print-color-adjust: exact !important;
           }
 
-          .print-footer-fixed img {
+          .print-partner-logo {
+            height: 18px !important;
             max-height: 20px !important;
+            width: auto !important;
+            object-fit: contain !important;
+            display: inline-block !important;
+            visibility: visible !important;
+          }
+
+          .print-logos-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 16px !important;
+          }
+
+          .print-footer-fixed img {
+            height: 18px !important;
+            max-height: 20px !important;
+            width: auto !important;
+            object-fit: contain !important;
             display: inline-block !important;
             visibility: visible !important;
           }
 
           /* Espaciador en tfoot para evitar colisiones con el footer fijo */
+          .print-spacer-footer,
           tfoot.print-spacer-footer {
             display: table-footer-group !important;
-            height: 44px !important;
+            height: 42px !important;
           }
 
           /* 2. Contenedor semanal en bloque sin flexbox limitante */

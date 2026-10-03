@@ -162,6 +162,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
     : 'Todas las Instituciones (12 Sedes Territoriales: Uribia, Riohacha, Manaure)';
 
   const effectivePeriod = periodLabel || 'Septiembre - Diciembre 2026';
+  const emissionDate = new Date().toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' });
 
   // Métricas dinámicas calculadas sobre las sesiones recibidas
   const kpis = useMemo(() => {
@@ -291,34 +292,19 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
       <style>{`
         @page {
           size: auto;
-          margin: 8mm 8mm 10mm 8mm !important;
-        }
-        .print-footer-fixed {
-          display: none;
+          margin: 6mm 8mm 10mm 8mm !important;
         }
         @media print {
-          /* 1. Liberar la altura en el documento para permitir varias páginas en Agenda Semanal / General */
-          html, body, #root, main, div[role="dialog"], .print-multi-page, .print-weekly {
-            ${isWeekly ? `
+          /* 1. Liberar la altura en el documento para permitir varias páginas */
+          html, body, #root, main, div[role="dialog"], .print-sheet {
             height: auto !important;
             min-height: 0 !important;
             max-height: none !important;
             overflow: visible !important;
             position: static !important;
-            ` : ''}
           }
 
           html, body, #root, #root > div, main, .min-h-screen {
-            ${isWeekly ? `
-            height: auto !important;
-            min-height: 0 !important;
-            max-height: none !important;
-            overflow: visible !important;
-            position: static !important;
-            ` : `
-            height: 100% !important;
-            min-height: 100% !important;
-            `}
             margin: 0 !important;
             margin-top: 0 !important;
             padding: 0 !important;
@@ -346,12 +332,11 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           }
           #printable-agenda, #printable-agenda *,
           #printable-official-document, #printable-official-document *,
-          .print-sheet, .print-sheet *,
-          .print-footer-fixed, .print-footer-fixed * {
+          .print-sheet, .print-sheet * {
             visibility: visible !important;
           }
 
-          /* Mostrar únicamente el contenedor de la agenda */
+          /* Evitar que el cabezote toque el borde derecho */
           #printable-agenda {
             display: block !important;
             width: 100% !important;
@@ -366,15 +351,18 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             display: table-header-group !important;
           }
 
-          /* Evitar que las filas se corten a la mitad */
-          #printable-agenda tr {
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
+          /* Repetir pie de página en cada hoja */
+          #printable-agenda tfoot,
+          tfoot.print-table-footer,
+          tfoot.print-spacer-footer,
+          .print-spacer-footer {
+            display: table-footer-group !important;
           }
 
-          /* Pie de página fijo en fondo de todas las hojas */
+          /* Pie de página fijo en fondo de todas las hojas con altura controlada */
           .print-footer-fixed {
-            display: block !important;
+            display: flex !important;
+            flex-direction: column !important;
             visibility: visible !important;
             position: fixed !important;
             bottom: 0 !important;
@@ -389,47 +377,37 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             print-color-adjust: exact !important;
           }
 
-          .print-footer-fixed img {
+          .print-partner-logo {
+            height: 18px !important;
             max-height: 20px !important;
+            width: auto !important;
+            object-fit: contain !important;
             display: inline-block !important;
             visibility: visible !important;
           }
 
-          /* Espaciador en tfoot para evitar colisiones con el footer fijo */
+          .print-logos-row {
+            display: flex !important;
+            align-items: center !important;
+            gap: 16px !important;
+          }
+
+          .print-spacer-footer,
           tfoot.print-spacer-footer {
-            display: table-footer-group !important;
-            height: 44px !important;
+            height: 42px !important;
           }
 
-          /* 2. Contenedor semanal en bloque sin flexbox limitante */
-          #printable-agenda.print-weekly,
-          #printable-agenda.print-multi-page,
-          .print-sheet.print-weekly,
-          .print-sheet.print-multi-page {
-            display: block !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            height: auto !important;
-            min-height: 0 !important;
-            page-break-inside: auto !important;
-            break-inside: auto !important;
-            box-sizing: border-box !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #ffffff !important;
-            color: #0f172a !important;
-            border: none !important;
-            box-shadow: none !important;
+          /* Evitar que las filas se corten a la mitad */
+          #printable-agenda tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
 
-          /* 3. Paginación limpia de la tabla semanal */
-          .print-weekly table,
-          .print-multi-page table {
+          /* Tabla fluida con bordes limpios */
+          #printable-agenda table {
             width: 100% !important;
             max-width: 100% !important;
             border-collapse: collapse !important;
-            page-break-inside: auto !important;
-            break-inside: auto !important;
             table-layout: fixed !important;
             box-sizing: border-box !important;
           }
@@ -653,8 +631,8 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
         <PdfLayout
           id="printable-agenda"
           className={isWeekly ? 'print-weekly print-multi-page' : 'print-daily print-single-page'}
-          showHeader={!isWeekly && sectionsConfig.header}
-          showFooter={!isWeekly && sectionsConfig.footer}
+          showHeader={false}
+          showFooter={false}
           headerProps={{
             branding,
             docTitle,
@@ -662,17 +640,9 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             effectivePeriod,
             showSeal: true,
           }}
-          footerProps={{
-            customLegend: 'Documento Técnico Oficial Concertado • Alianza Grupo Energía Bogotá • ACDI/VOCA • Fundación Promigas • Enlaza • The Biz Nation • Sistema de Gestión de Formaciones La Guajira 2026.',
-          }}
         >
         {/* ========================================================================= */}
-        {/* 2. BLOQUE ULTRA-COMPACTO DE RESUMEN (EN DIARIA FUERA DE LA TABLA) */}
-        {/* ========================================================================= */}
-        {!isWeekly && sectionsConfig.dashboardKpis && renderKpis()}
-
-        {/* ========================================================================= */}
-        {/* 3. TABLA CONTINUA UNIFICADA DE FORMACIONES (INICIA DE INMEDIATO EN PÁGINA 1) */}
+        {/* TABLA CONTINUA UNIFICADA DE FORMACIONES CON THEAD Y TFOOT UNIVERSALES */}
         {/* ========================================================================= */}
         {sectionsConfig.scheduleGrid && (
           <div className="mb-2 print:mb-1 print-schedule">
@@ -684,19 +654,51 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
               <div className="border border-slate-300 rounded overflow-visible print:border print:rounded-none w-full max-w-full box-border">
                 <table className="w-full max-w-full text-left text-[9px] print:text-[8px] border-collapse box-border table-fixed">
                   <thead className="print-table-header">
-                    {/* Fila 1: Cabezote institucional que se repetirá en cada hoja */}
-                    {isWeekly && sectionsConfig.header && (
+                    {/* Fila 1: Cabezote institucional universal que se repetirá en cada hoja */}
+                    {sectionsConfig.header && (
                       <tr className="border-0 bg-white">
                         <th colSpan={9} className="border-0 p-0 font-normal text-left bg-white w-full max-w-full box-border">
                           <div className="pb-2 w-full max-w-full box-border overflow-hidden">
-                            {/* Contenido del Cabezote: Logo, Título, Subtítulo y Tarjetas de Resumen */}
-                            <PdfHeader
-                              branding={branding}
-                              docTitle={docTitle}
-                              scopeLabel={scopeLabel}
-                              effectivePeriod={effectivePeriod}
-                              showSeal={true}
-                            />
+                            {/* Centrado perfecto del cabezote (equilibrio simétrico) */}
+                            <div className="grid grid-cols-[130px_1fr_130px] items-center w-full pb-2 box-border">
+                              {/* Columna Izquierda: Logo LEGADO alineado a la izquierda */}
+                              <div className="flex items-center justify-start">
+                                <img 
+                                  src="/logo-legado.png" 
+                                  alt="LEGADO" 
+                                  className="h-9 w-auto object-contain" 
+                                  onError={(e) => { e.currentTarget.src = '/logos/legado.png'; }}
+                                />
+                              </div>
+
+                              {/* Columna Central: Títulos estrictamente centrados sin invadir los lados */}
+                              <div className="text-center px-2 min-w-0">
+                                <p className="text-[7.5px] font-bold text-slate-600 uppercase tracking-wider leading-tight">
+                                  ALIANZA: GRUPO ENERGÍA BOGOTÁ • ACDI/VOCA • FUNDACIÓN PROMIGAS • ENLAZA • THE BIZ NATION
+                                </p>
+                                <h1 className="text-[13px] font-black text-slate-900 tracking-tight leading-tight my-0.5">
+                                  PROGRAMA VOCACIÓN QUE TRANSFORMA
+                                </h1>
+                                <h2 className="text-[11px] font-bold text-amber-600 leading-tight">
+                                  {docTitle}
+                                </h2>
+                                <p className="text-[7px] text-slate-500 leading-tight mt-0.5">
+                                  Alcance: {scopeLabel || 'Todas las Instituciones (12 Sedes Territoriales: Uribia, Riohacha, Manaure)'} • Periodo: {effectivePeriod} • Emisión: {emissionDate}
+                                </p>
+                                <p className="text-[7px] text-slate-500 leading-tight">
+                                  Coord: {branding.coordinatorName || 'Andrés Felipe Fernández Morales'} • Ing: {branding.engineerName || 'Pedro Manuel Camargo Pinto'}
+                                </p>
+                              </div>
+
+                              {/* Columna Derecha: Badge Concertado y vigencia equilibrado a la derecha */}
+                              <div className="flex flex-col items-end justify-center text-right">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[8.5px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-300">
+                                  ✓ Concertado 2026
+                                </span>
+                                <span className="text-[7.5px] text-slate-500 font-medium mt-0.5">La Guajira, Colombia</span>
+                                <span className="text-[6.5px] text-slate-400">Vigencia Oficial</span>
+                              </div>
+                            </div>
                             {sectionsConfig.dashboardKpis && renderKpis()}
                           </div>
                         </th>
@@ -844,16 +846,12 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
                       );
                     })}
                   </tbody>
-                  {/* Espaciador transparente en la tabla (tfoot) para evitar colisiones con el footer fijo */}
-                  {isWeekly && sectionsConfig.footer && (
-                    <tfoot className="print-spacer-footer">
-                      <tr className="border-0 bg-transparent">
-                        <td colSpan={9} className="border-0 p-0 bg-transparent" style={{ height: '44px' }}>
-                          <div style={{ height: '44px', visibility: 'hidden' }}></div>
-                        </td>
-                      </tr>
-                    </tfoot>
-                  )}
+                  {/* Espaciador transparente en tfoot para que las filas no choquen con el pie de página fijo */}
+                  <tfoot className="print-spacer-footer">
+                    <tr className="border-0 bg-transparent">
+                      <td colSpan={9} className="border-0 p-0 h-10 print:h-9 bg-transparent"></td>
+                    </tr>
+                  </tfoot>
                 </table>
               </div>
             )}
@@ -895,23 +893,43 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           </div>
         )}
 
-        {/* Pie de página oficial que se repetirá en todas las hojas fijado al fondo */}
-        {isWeekly && sectionsConfig.footer && (
-          <div className="print-footer-fixed">
-            <div className="border-t border-slate-300 pt-1.5 px-1 flex justify-between items-center bg-white">
-              <div className="flex items-center gap-4">
-                <img src="/logos/grupo_energia_bogota.png" alt="GEB" className="h-5 object-contain" />
-                <img src="/logos/acdi.png" alt="ACDI/VOCA" className="h-5 object-contain" />
-                <img src="/logos/promigas.png" alt="Promigas" className="h-5 object-contain" />
-                <img src="/logos/enlaza.png" alt="Enlaza" className="h-5 object-contain" />
-                <img src="/logos/biz_nation.png" alt="The Biz Nation" className="h-5 object-contain" />
-              </div>
-              <span className="text-[8px] text-slate-500 font-medium leading-[1.1] max-w-[55%] text-right">
-                Documento Técnico Oficial Concertado • Alianza Grupo Energía Bogotá • ACDI/VOCA • Fundación Promigas • Enlaza • The Biz Nation • Sistema de Gestión de Formaciones La Guajira 2026.
-              </span>
-            </div>
+        {/* Pie de página en pantalla (vista previa no impresa) */}
+        <div className="print:hidden flex flex-col justify-center items-center w-full bg-white border-t border-slate-300 pt-2 pb-1.5 mt-4 box-border">
+          {/* Nivel 1: Logos distribuidos a todo lo largo (en vertical y horizontal) */}
+          <div className="w-full flex items-center justify-between px-3">
+            <img src="/logos/geb.png" alt="GEB" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <img src="/logos/acdivoca.png" alt="ACDI/VOCA" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <img src="/logos/promigas.png" alt="Promigas" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <img src="/logos/enlaza.png" alt="Enlaza" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <img src="/logos/biznation.png" alt="The Biz Nation" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
           </div>
-        )}
+
+          {/* Nivel 2: Texto legal centrado debajo de los logos */}
+          <div className="w-full text-center mt-1">
+            <span className="text-[7.5px] leading-tight text-slate-500 font-medium block">
+              Documento Técnico Oficial Concertado • Alianza Grupo Energía Bogotá • ACDI/VOCA • Fundación Promigas • Enlaza • The Biz Nation • Sistema de Gestión de Formaciones La Guajira 2026.
+            </span>
+          </div>
+        </div>
+
+        {/* Pie de página oficial: solo visible al imprimir, tamaño milimétrico */}
+        <div className="hidden print:flex print-footer-fixed flex-col justify-center items-center w-full bg-white border-t border-slate-300 pt-1.5 pb-1 box-border">
+          {/* Nivel 1: Logos distribuidos a todo lo largo (en vertical y horizontal) */}
+          <div className="w-full flex items-center justify-between px-3">
+            <img src="/logos/geb.png" alt="GEB" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <img src="/logos/acdivoca.png" alt="ACDI/VOCA" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <img src="/logos/promigas.png" alt="Promigas" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <img src="/logos/enlaza.png" alt="Enlaza" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <img src="/logos/biznation.png" alt="The Biz Nation" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+          </div>
+
+          {/* Nivel 2: Texto legal centrado debajo de los logos */}
+          <div className="w-full text-center mt-1">
+            <span className="text-[7.5px] leading-tight text-slate-500 font-medium block">
+              Documento Técnico Oficial Concertado • Alianza Grupo Energía Bogotá • ACDI/VOCA • Fundación Promigas • Enlaza • The Biz Nation • Sistema de Gestión de Formaciones La Guajira 2026.
+            </span>
+          </div>
+        </div>
         </PdfLayout>
       </div>
     </div>

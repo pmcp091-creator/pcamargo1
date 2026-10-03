@@ -1,25 +1,43 @@
 {
   "id": "/",
-  "name": "Cronograma Vocación que Transforma",
-  "short_name": "Cronograma",
-  "description": "Sistema de gestión, edición, consulta e impresión offline del cronograma de formaciones para The Biz Nation en Uribia, Riohacha y Manaure.",
+  "name": "Cronograma Vocación que Transforma - LEGADO",
+  "short_name": "LEGADO",
+  "description": "Sistema de gestión, edición, consulta e impresión offline del cronograma oficial de formaciones concertadas Legado para los Territorios.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "theme_color": "#0f172a",
-  "background_color": "#0f172a",
+  "theme_color": "#0b1739",
+  "background_color": "#ffffff",
   "icons": [
     {
-      "src": "/logos/biz_nation.png",
+      "src": "/pwa-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/logos/legado.png",
+      "src": "/pwa-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
       "purpose": "any"
     }
   ]

@@ -1,6 +1,22 @@
-const CACHE_NAME = 'legado-mobile-dock-v12';
+const CACHE_NAME = 'legado-pwa-icon-v16';
+const PRECACHE_ASSETS = [
+  '/',
+  '/manifest.json',
+  '/pwa-192x192.png',
+  '/pwa-512x512.png',
+  '/pwa-maskable-512x512.png',
+  '/apple-touch-icon.png',
+  '/icon.svg',
+  '/favicon.ico',
+  '/logos/legado.png'
+];
 
-self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('install', (e) => {
+  e.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_ASSETS)).catch(() => {})
+  );
+  self.skipWaiting();
+});
 
 self.addEventListener('activate', (e) => {
   e.waitUntil(
