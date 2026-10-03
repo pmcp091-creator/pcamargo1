@@ -1,4 +1,4 @@
-const CACHE_NAME = 'legado-pwa-icon-v16';
+const CACHE_NAME = 'legado-clean-print-v17';
 const PRECACHE_ASSETS = [
   '/',
   '/manifest.json',

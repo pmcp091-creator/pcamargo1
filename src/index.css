@@ -78,10 +78,6 @@
   margin: 6mm 8mm 10mm 8mm !important;
 }
 
-.print-footer-fixed {
-  display: none;
-}
-
 @media print {
   /* 1. Liberar la altura en el documento para permitir varias páginas en Agenda Semanal / General */
   html, body, #root, main, div[role="dialog"], .print-multi-page, .print-weekly {

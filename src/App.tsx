@@ -29,7 +29,6 @@ import { validarReglaUribia, asegurarReglaUribia, esSesionHistorica } from './ut
 import { generateMasterSchedule } from './utils/scheduleGenerator';
 import { sortSessions, SessionSortField, SortOrder, ordenarSesionesDelDia } from './utils/sorting';
 import { useOnlineStatus } from './hooks/useOnlineStatus';
-import { loadHtml2Pdf } from './utils/pdfExport';
 import { initialValidatedSessions, expandToIndividualSessions } from './data/scheduleRulesData';
 import { DEFAULT_BRANDING } from './data/initialData';
 import { 
@@ -958,9 +957,6 @@ export default function App() {
         @page {
           size: auto;
           margin: 6mm 8mm 10mm 8mm !important;
-        }
-        .print-footer-fixed {
-          display: none;
         }
         @media print {
           /* 1. Liberar la altura en el documento para permitir varias páginas en Agenda Semanal / General */

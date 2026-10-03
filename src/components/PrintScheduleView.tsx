@@ -7,7 +7,6 @@ import {
   CheckCircle2, 
   FileSpreadsheet
 } from 'lucide-react';
-import { generateDirectPDF } from '../utils/pdfExport';
 import { ordenarSesionesDelDia, getStartMinutes } from '../utils/sorting';
 import { PdfLayout, PdfHeader, PdfFooter } from './pdf';
 
@@ -241,22 +240,9 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
   );
   const isMultiPage = isWeekly;
 
-  // Generación y descarga directa de PDF oficial
-  const handleDownloadPDF = async () => {
-    setIsGeneratingPDF(true);
-    try {
-      await generateDirectPDF({
-        elementId: 'printable-agenda',
-        paperFormat: paperFormat as 'letter' | 'legal',
-        paperOrientation: paperOrientation as 'landscape' | 'portrait',
-        restrictedInstName: activeInstitution,
-      });
-    } catch (error) {
-      console.error('Error generando archivo PDF oficial:', error);
-      window.print();
-    } finally {
-      setIsGeneratingPDF(false);
-    }
+  // Generación y descarga de PDF oficial mediante impresión nativa del navegador
+  const handleDownloadPDF = () => {
+    window.print();
   };
 
   const renderKpis = () => (
@@ -632,7 +618,7 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
           id="printable-agenda"
           className={isWeekly ? 'print-weekly print-multi-page' : 'print-daily print-single-page'}
           showHeader={false}
-          showFooter={false}
+          showFooter={true}
           headerProps={{
             branding,
             docTitle,
@@ -892,44 +878,6 @@ export const PrintScheduleView: React.FC<PrintScheduleViewProps> = ({
             </div>
           </div>
         )}
-
-        {/* Pie de página en pantalla (vista previa no impresa) */}
-        <div className="print:hidden flex flex-col justify-center items-center w-full bg-white border-t border-slate-300 pt-2 pb-1.5 mt-4 box-border">
-          {/* Nivel 1: Logos distribuidos a todo lo largo (en vertical y horizontal) */}
-          <div className="w-full flex items-center justify-between px-3">
-            <img src="/logos/geb.png" alt="GEB" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-            <img src="/logos/acdivoca.png" alt="ACDI/VOCA" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-            <img src="/logos/promigas.png" alt="Promigas" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-            <img src="/logos/enlaza.png" alt="Enlaza" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-            <img src="/logos/biznation.png" alt="The Biz Nation" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-          </div>
-
-          {/* Nivel 2: Texto legal centrado debajo de los logos */}
-          <div className="w-full text-center mt-1">
-            <span className="text-[7.5px] leading-tight text-slate-500 font-medium block">
-              Documento Técnico Oficial Concertado • Alianza Grupo Energía Bogotá • ACDI/VOCA • Fundación Promigas • Enlaza • The Biz Nation • Sistema de Gestión de Formaciones La Guajira 2026.
-            </span>
-          </div>
-        </div>
-
-        {/* Pie de página oficial: solo visible al imprimir, tamaño milimétrico */}
-        <div className="hidden print:flex print-footer-fixed flex-col justify-center items-center w-full bg-white border-t border-slate-300 pt-1.5 pb-1 box-border">
-          {/* Nivel 1: Logos distribuidos a todo lo largo (en vertical y horizontal) */}
-          <div className="w-full flex items-center justify-between px-3">
-            <img src="/logos/geb.png" alt="GEB" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-            <img src="/logos/acdivoca.png" alt="ACDI/VOCA" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-            <img src="/logos/promigas.png" alt="Promigas" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-            <img src="/logos/enlaza.png" alt="Enlaza" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-            <img src="/logos/biznation.png" alt="The Biz Nation" className="h-5 max-h-[20px] w-auto object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
-          </div>
-
-          {/* Nivel 2: Texto legal centrado debajo de los logos */}
-          <div className="w-full text-center mt-1">
-            <span className="text-[7.5px] leading-tight text-slate-500 font-medium block">
-              Documento Técnico Oficial Concertado • Alianza Grupo Energía Bogotá • ACDI/VOCA • Fundación Promigas • Enlaza • The Biz Nation • Sistema de Gestión de Formaciones La Guajira 2026.
-            </span>
-          </div>
-        </div>
         </PdfLayout>
       </div>
     </div>
